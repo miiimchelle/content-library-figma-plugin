@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "target": "ES2019",
+    "lib": ["ES2019"],
+    "strict": true,
+    "skipLibCheck": true,
+    "types": ["@figma/plugin-typings"],
+    "outDir": "."
+  },
+  "include": ["code.ts"],
+  "exclude": ["node_modules"]
+}

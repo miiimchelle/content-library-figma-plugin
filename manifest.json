@@ -1,0 +1,21 @@
+{
+  "name": "Content library",
+  "id": "b2de83e4-1948-46df-b573-0911fc30a7e7",
+  "api": "1.0.0",
+  "main": "code.js",
+  "documentAccess": "dynamic-page",
+  "editorType": [
+    "figma"
+  ],
+  "isTool": true,
+  "networkAccess": {
+    "allowedDomains": ["none"]
+  },
+  "relaunchButtons": [
+    {
+      "command": "b2de83e4-1948-46df-b573-0911fc30a7e7",
+      "name": "Content library"
+    }
+  ],
+  "ui": "ui.html"
+}

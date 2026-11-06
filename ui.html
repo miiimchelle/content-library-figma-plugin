@@ -1,0 +1,270 @@
+<!doctype html>
+<html><head>
+<script>
+try { window.localStorage.getItem('x'); } catch (e) {
+  const store = new Map();
+  Object.defineProperty(window, 'localStorage', { configurable: true, value: {
+    getItem: k => store.has(k) ? store.get(k) : null,
+    setItem: (k, v) => { store.set(k, String(v)); }, removeItem: k => { store.delete(k); },
+    clear: () => { store.clear(); }, key: i => Array.from(store.keys())[i] ?? null,
+    get length() { return store.size; }
+  }});
+}
+</script>
+<meta charset="utf-8">
+<style>
+html,body{margin:0;padding:0;overflow:hidden;background:var(--figma-color-bg,#fff);color:var(--figma-color-text,#222);font:12px/1.5 sans-serif}
+*{box-sizing:border-box;min-width:0}#plugin-root{height:640px;width:100%;display:flex;flex-direction:column}h1{font-size:14px;margin:0}h2{font-size:12px;margin:0 0 6px}p{margin:4px 0}.muted,.field-label{color:var(--figma-color-text-secondary,#666)}
+[hidden]{display:none!important}.copy{white-space:pre-wrap;overflow-wrap:anywhere}.topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 12px 4px}.topbar h1{flex:1}.topbar button{flex:none}#library-summary{padding:0 12px;margin:0;font-size:11px}#storage{padding:0 12px;font-size:11px}#storage:empty,#error:empty,#result:empty{display:none}#bridge{padding:0 12px}#reconnect,#retry-save{margin:4px 12px}#error{color:var(--figma-color-text-danger,#b3261e);padding:8px 12px;max-height:100px;overflow:auto;flex:none}#import-panel{padding:20px 12px;overflow:auto}#import-panel p{margin-bottom:12px}#picker-host{margin:16px 0}#browse{display:flex;flex-direction:column;flex:1;min-height:0}#browse-tools{padding:12px;border-bottom:1px solid var(--figma-color-border,#ddd)}.filters{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}.filters label{display:block;font-size:11px;margin-bottom:4px}input[type=search],input[type=file]{display:block;width:100%;font:inherit;color:inherit;background:var(--figma-color-bg,#fff);border:1px solid var(--figma-color-border,#ddd);border-radius:5px;padding:5px 8px}input[type=search]:focus-visible,input[type=file]:focus-visible{outline:2px solid var(--figma-color-border-brand,#087df0);outline-offset:-1px}.input-label{display:block;font-size:11px;margin-bottom:4px;color:var(--figma-color-text-secondary,#666)}button{max-width:100%}#result-count{margin-top:8px;font-size:11px}#entries{flex:1;overflow-y:auto;overscroll-behavior:contain;padding:0 12px 12px;scrollbar-gutter:stable}#entries:focus-visible,summary:focus-visible{outline:2px solid var(--figma-color-border-brand,#087df0);outline-offset:-2px}.card{border-bottom:1px solid var(--figma-color-border,#ddd);padding:16px 0}.entry-meta{margin-bottom:8px;font-size:11px}.entry-meta summary{cursor:pointer;overflow-wrap:anywhere}.entry-meta p{overflow-wrap:anywhere}
+.field-choice{padding:10px 6px;border:1px solid transparent;border-radius:5px}.field-choice+.field-choice{border-top-color:var(--figma-color-border,#ddd);margin-top:6px}.field-header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}.field-header button{flex:none}.field-label{font-size:11px;font-weight:600}.field-choice>.copy{display:block;margin:0}.field-choice[data-selected=true]{border-color:var(--figma-color-border-brand,#087df0);background:var(--figma-color-bg-selected,#e5f4ff)}.field-choice[data-selected=true] .field-label{color:var(--figma-color-text-brand,#0675df)}.choice-row:focus-within{outline:2px solid var(--figma-color-border-brand,#087df0);outline-offset:2px}.empty{padding:28px 0}.empty h2{font-size:13px}.empty p{margin:8px 0 12px}
+#actions{display:block;flex:none;padding:10px 12px 12px;border-top:1px solid var(--figma-color-border,#ddd);background:var(--figma-color-bg,#fff);overflow-wrap:anywhere}#chosen{margin-bottom:6px}#chosen-label{font-size:11px}#review{margin:6px 0}#review summary{cursor:pointer;font-size:11px;color:var(--figma-color-text-secondary,#666)}#review-content{max-height:120px;overflow-y:auto;padding:6px 0}#targets .card{padding:6px 0}#chosen-text{margin:0 0 8px}#preview-count{font-size:11px}#action-status,#result{font-size:11px;margin:4px 0 8px}#selection{font-size:11px;margin:0 0 4px;color:var(--figma-color-text-secondary,#666)}#retry-preview{margin-bottom:6px}
+.category-heading{display:flex;justify-content:space-between;gap:8px;margin-top:8px;font-size:11px}#category-hint{flex:none}#categories{display:flex;gap:6px;overflow-x:auto;overscroll-behavior-x:contain;padding:4px 0 6px}#categories button{flex:none;width:max-content;max-width:none;white-space:nowrap}#categories button[selected]{background:var(--figma-color-bg-selected,#e5f4ff);color:var(--figma-color-text-brand,#0675df);border-radius:5px}#category-current{overflow-wrap:anywhere}.subcategory-filter{display:flex;align-items:center;gap:8px}.subcategory-filter label{flex:none;font-size:11px}#browse-tools{flex:none}
+.subcategory-filter{display:block;margin-top:4px}.subcategory-filter>span{display:block;font-size:11px;margin-bottom:4px}#subcategories{display:flex;flex-wrap:wrap;gap:4px}#subcategories button{flex:none;width:max-content;max-width:none;white-space:nowrap}#subcategories button[selected]{background:var(--figma-color-bg-selected,#e5f4ff);color:var(--figma-color-text-brand,#0675df);border-radius:5px}
+#action-status:empty,#selection:empty{display:none}
+.copy-section>article.card{border:0;padding:0;margin:8px 0}.choice-row{display:block;width:100%;height:auto;cursor:pointer;border-radius:5px;background:var(--figma-color-bg-secondary,#f5f5f5)}.choice-row:hover{background:var(--figma-color-bg-hover,var(--figma-color-bg-secondary))}.choice-row:focus-visible{outline:2px solid var(--figma-color-border-brand);outline-offset:2px}.choice-state{font-size:11px;color:var(--figma-color-text-brand)}
+button{font:inherit;color:var(--figma-color-text,#222);background:var(--figma-color-bg-secondary,#f5f5f5);border:1px solid var(--figma-color-border,#ddd);border-radius:5px;padding:5px 12px;cursor:pointer;text-align:center}
+button:hover:not([disabled]){background:var(--figma-color-bg-hover,#eaeaea)}button:focus-visible{outline:2px solid var(--figma-color-border-brand,#087df0);outline-offset:2px}
+button[disabled]{opacity:.4;cursor:default}button[full]{display:block;width:100%}button[size=compact]{padding:2px 8px;font-size:11px}
+button[variant=primary]{background:var(--figma-color-bg-brand,#0d99ff);border-color:transparent;color:var(--figma-color-text-onbrand,#fff)}button[variant=primary]:hover:not([disabled]){background:var(--figma-color-bg-brand-hover,#0b84dd)}
+button[variant=ghost]{background:transparent;border-color:transparent;color:var(--figma-color-text-brand,#0675df)}button[variant=ghost]:hover:not([disabled]){background:var(--figma-color-bg-hover,#eaeaea)}
+.choice-row{text-align:left;color:inherit}
+#actions{position:sticky;bottom:0}
+</style></head><body>
+<div id="plugin-root">
+<header class="topbar"><h1>Content library</h1><button id="replace" variant="ghost" size="compact" hidden>Import CSV</button></header>
+<p id="storage" class="muted" role="status">Checking saved library...</p><button id="retry-save" variant="ghost" hidden>Retry saving</button>
+<p id="bridge" class="muted" role="status" hidden>Connecting to Figma...</p>
+<button id="reconnect" variant="secondary" hidden>Retry connection</button>
+<section id="import-panel">
+<h2>Import your CSV</h2><p>Upload your team's copy to get started. Your library is remembered on this device.</p>
+<p class="muted">Headers: category, subcategory, key, heading, body, ctas, source_file</p>
+<div id="picker-host"></div>
+<button id="retry-file" variant="secondary" hidden>Read this file again</button>
+<button id="cancel-import" variant="ghost" hidden>Back to library</button>
+</section>
+<p id="error" role="alert"></p>
+<section id="browse" hidden>
+<section id="browse-tools" aria-label="Find copy">
+<label class="input-label" for="search">Search library</label><input id="search" type="search" placeholder="Search copy, key, source or subcategory" autocomplete="off">
+<div class="category-heading"><span id="category-label">Category</span><span id="category-hint" class="muted">Scroll for more &gt;</span></div>
+<div id="categories" role="group" aria-labelledby="category-label" aria-describedby="category-hint"></div>
+<div class="subcategory-filter"><span id="subcategory-label">Content type</span><div id="subcategories" role="group" aria-labelledby="subcategory-label"></div></div>
+<div style="display:flex;align-items:center;justify-content:space-between"><p id="result-count" class="muted" role="status"></p><button id="clear-filters" variant="ghost" size="compact" hidden>Clear</button></div>
+</section>
+<div id="entries" role="region" tabindex="0" aria-label="Copy entries"></div>
+<div id="actions">
+<p id="selection" class="muted"></p>
+<p id="action-status" role="status">Choose content to apply.</p>
+<button id="retry-preview" variant="secondary" full hidden>Try again</button>
+<button id="apply" variant="primary" full disabled>Apply</button>
+<p id="result" role="status"></p>
+</div>
+</section>
+</div>
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const headers = ['category','subcategory','key','heading','body','ctas','source_file'];
+  const contentTypes = [['Heading', 'Headings'], ['Body', 'Body'], ['CTA', 'CTA']];
+  const hasType = (item, type) => (type === 'Heading' ? item.heading : type === 'Body' ? item.body : item.ctas.split('|').map(value => value.trim()).filter(Boolean).join('')).trim().length > 0;
+  let library = [], csv = '', category = null, subcategory = null, query = '', entry = null, copy = null, fieldLabel = null;
+  let confirmation = null, request = 0, importVersion = 0, lastFile = null, connected = false, restoring = true, signature = null, eligibleCount = 0, busy = false, saveRequest = 0, previewTimer = null;
+  const send = message => parent.postMessage({ pluginMessage: message }, '*');
+  const show = (id, visible) => { $(id).hidden = !visible; };
+  const disabled = (id, value) => $(id).toggleAttribute('disabled', value);
+  const text = (tag, value, className) => { const el = document.createElement(tag); el.textContent = value; if (className) el.className = className; return el; };
+  function button(label, action) { const el = text('button', label); el.setAttribute('variant', 'secondary'); el.addEventListener('click', action); return el; }
+  const human = value => value.replace(/[_-]+/g, ' ').replace(/\b\w/g, ch => ch.toUpperCase()) || '(empty)';
+  function parseCSV(raw) {
+    if (typeof raw !== 'string') throw new Error('CSV must be text.');
+    const input = raw.charCodeAt(0) === 0xfeff ? raw.slice(1) : raw;
+    const rows = []; let row = [], cell = '', quoted = false, closed = false;
+    function finishCell() { row.push(cell); cell = ''; closed = false; }
+    function finishRow() { finishCell(); rows.push(row); row = []; }
+    for (let i = 0; i < input.length; i++) {
+      const ch = input[i];
+      if (quoted) {
+        if (ch === '"') { if (input[i + 1] === '"') { cell += '"'; i++; } else { quoted = false; closed = true; } }
+        else cell += ch;
+      } else if (ch === ',') finishCell();
+      else if (ch === '\r' || ch === '\n') { finishRow(); if (ch === '\r' && input[i + 1] === '\n') i++; }
+      else if (ch === '"' && !cell && !closed) quoted = true;
+      else { if (closed || ch === '"') throw new Error('Invalid CSV quoting near character ' + (i + 1) + '.'); cell += ch; }
+    }
+    if (quoted) throw new Error('Unclosed quoted CSV field.');
+    if (cell || row.length || closed) finishRow();
+    if (!rows.length) throw new Error('CSV is empty.');
+    const columns = rows.shift();
+    const duplicate = columns.filter((value, index) => columns.indexOf(value) !== index);
+    const missing = headers.filter(value => !columns.includes(value));
+    if (duplicate.length || missing.length) throw new Error([duplicate.length ? 'Duplicate headers: ' + duplicate.join(', ') : '', missing.length ? 'Missing headers: ' + missing.join(', ') : ''].filter(Boolean).join('. '));
+    if (columns.length !== headers.length) throw new Error('Use only the seven required CSV headers.');
+    const entries = [];
+    rows.forEach((values, index) => {
+      if (values.length === 1 && values[0] === '') return;
+      if (values.length !== columns.length) throw new Error('CSV record ' + (index + 2) + ' has ' + values.length + ' cells; expected seven.');
+      const item = { id: index }; columns.forEach((key, i) => { item[key] = values[i]; }); entries.push(item);
+    });
+    if (!entries.length) throw new Error('CSV contains no copy entries.');
+    return entries;
+  }
+  function invalidate() {
+    clearTimeout(previewTimer); previewTimer = null;
+    confirmation = null; request++; disabled('apply', true); show('retry-preview', false); $('apply').textContent = 'Apply';
+    $('action-status').textContent = copy === null ? 'Choose content to apply.' : !connected ? '' : !eligibleCount ? 'Select text layers in Figma.' : 'Checking selection...';
+  }
+  function resetChoice() { entry = null; copy = null; fieldLabel = null; invalidate(); }
+  function previewCopy() {
+    if (copy === null || !connected || !eligibleCount || busy) return;
+    invalidate(); $('error').textContent = '';
+    send({ type: 'preview', copy, request });
+    previewTimer = setTimeout(() => { invalidate(); $('action-status').textContent = 'Could not check selection. Try again.'; show('retry-preview', true); }, 8000);
+  }
+  function save() { saveRequest++; $('storage').textContent = connected ? 'Saving library on this device...' : 'Library available. Not saved: Figma bridge unavailable.'; show('retry-save', !connected); send({ type: 'save', csv, request: saveRequest }); }
+  function install(raw, parsed, persist) {
+    csv = raw; library = parsed; category = null; subcategory = null; query = ''; $('search').value = '';
+    resetChoice(); show('import-panel', false); show('browse', true); show('replace', true); show('cancel-import', true); $('error').textContent = ''; $('result').textContent = '';
+    $('categories').replaceChildren();
+    [null, ...new Set(library.map(item => item.category))].forEach(value => {
+      const choice = button(value === null ? 'All categories' : human(value), () => {
+        filter(value, null); $('entries').scrollTop = 0;
+        choice.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+      });
+      choice.setAttribute('size', 'compact');
+      choice.addEventListener('focusin', () => choice.scrollIntoView({ block: 'nearest', inline: 'nearest' }));
+      choice.categoryValue = value; $('categories').append(choice);
+    });
+    $('categories').scrollLeft = 0;
+    renderFilters(); renderEntries(); if (persist) save();
+  }
+  function renderCategorySelection() {
+    for (const choice of $('categories').children) { const on = choice.categoryValue === category; choice.toggleAttribute('selected', on); choice.setAttribute('aria-pressed', String(on)); }
+  }
+  function renderFilters() {
+    renderCategorySelection();
+    if (!$('subcategories').children.length) {
+      [[null, 'All'], ...contentTypes].forEach(([value, label]) => {
+        const choice = button(label, () => {
+          filter(category, value); $('entries').scrollTop = 0;
+        });
+        choice.setAttribute('size', 'compact');
+        choice.subcategoryValue = value; $('subcategories').append(choice);
+      });
+    }
+    renderSubcategorySelection();
+  }
+  function renderSubcategorySelection() {
+    for (const choice of $('subcategories').children) { const on = choice.subcategoryValue === subcategory; choice.toggleAttribute('selected', on); choice.setAttribute('aria-pressed', String(on)); }
+  }
+  function filter(cat, sub) { category = cat; subcategory = sub; resetChoice(); $('result').textContent = ''; renderFilters(); renderEntries(); }
+  function renderEntries() {
+    const entries = library.filter(item => (category === null || item.category === category) && (subcategory === null || hasType(item, subcategory)) && [item.key,item.subcategory,item.heading,item.body,item.ctas,item.source_file].some(value => value.toLowerCase().includes(query)));
+    $('result-count').textContent = entries.length === library.length ? entries.length + (entries.length === 1 ? ' entry' : ' entries') : entries.length + ' of ' + library.length + ' entries';
+    show('clear-filters', !!query || category !== null || subcategory !== null);
+    $('entries').replaceChildren();
+    if (!entries.length) { const empty = document.createElement('div'); empty.className = 'empty'; empty.append(text('h2', 'No matching copy'), text('p', 'Try another search or clear your filters.', 'muted'), button('Clear search & filters', clearFilters)); $('entries').append(empty); }
+    const sources = new Map();
+    entries.forEach(item => {
+      if (!sources.has(item.source_file)) sources.set(item.source_file, []);
+      sources.get(item.source_file).push(item);
+    });
+    sources.forEach((items, source) => {
+      const group = document.createElement('section'); group.className = 'source-group card'; group.dataset.source = source;
+      const title = text('h2', source || 'Unspecified source', 'copy');
+      title.id = 'source-' + items[0].id; group.setAttribute('aria-labelledby', title.id);
+      const fields = items.flatMap(item => [['Heading', item.heading], ['Body', item.body], ...item.ctas.split('|').map((value, i) => ['CTA ' + (i + 1), value.trim()])].filter(([label, value]) => value.trim() && (subcategory === null || (subcategory === 'CTA' ? label.startsWith('CTA') : label === subcategory))).map(([label, value]) => ({ item, label, value })));
+      group.append(title);
+      for (const [type, name] of [['Heading', 'Headings'], ['Body', 'Body text'], ['CTA', 'CTAs']]) {
+        if (subcategory !== null && subcategory !== type) continue;
+        const section = document.createElement('section'); section.className = 'copy-section'; section.dataset.type = type;
+        const choices = fields.filter(field => type === 'CTA' ? field.label.startsWith('CTA') : field.label === type);
+        if (!choices.length) continue;
+        const heading = text('h3', name, 'field-label'); heading.id = title.id + '-' + type; section.setAttribute('aria-labelledby', heading.id);
+        section.append(heading);
+        choices.forEach(({ item, label, value }) => {
+          const card = document.createElement('article'); card.className = 'card'; card.dataset.row = item.id;
+          const selected = entry === item && fieldLabel === label;
+           const choice = document.createElement('div'); choice.className = 'choice-row'; choice.dataset.field = label; choice.setAttribute('role', 'button'); choice.setAttribute('tabindex', '0'); choice.setAttribute('aria-pressed', String(selected)); choice.toggleAttribute('selected', selected);
+           const field = document.createElement('div'); field.className = 'field-choice'; field.dataset.selected = String(selected);
+            choice.setAttribute('aria-label', label + ': ' + value);
+           const selectChoice = () => {
+             if (busy || (entry === item && fieldLabel === label)) return;
+             entry = item; fieldLabel = label; copy = value; invalidate();
+             $('entries').querySelectorAll('.choice-row').forEach(row => {
+               const active = row.closest('article').dataset.row === String(entry.id) && row.dataset.field === fieldLabel;
+               row.toggleAttribute('selected', active); row.setAttribute('aria-pressed', String(active)); row.querySelector('.field-choice').dataset.selected = String(active);
+             });
+               $('result').textContent = '';
+             previewCopy();
+           };
+           choice.addEventListener('click', selectChoice);
+           choice.addEventListener('keydown', event => {
+             if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); if (!event.repeat) selectChoice(); }
+           });
+            field.append(text('p', value, 'copy')); choice.append(field); card.append(choice); section.append(card);
+        });
+        group.append(section);
+      }
+      items.filter(item => !fields.some(field => field.item === item)).forEach(item => {
+        const card = document.createElement('article'); card.className = 'card'; card.dataset.row = item.id;
+        card.append(text('p', 'No copy in this entry.', 'muted'));
+        group.append(card);
+      });
+      $('entries').append(group);
+    });
+  }
+  function clearFilters() { query = ''; $('search').value = ''; filter(null, null); $('entries').scrollTop = 0; $('entries').focus(); }
+  $('clear-filters').addEventListener('click', clearFilters);
+  function readFile(file) {
+    if (typeof file.text === 'function') return file.text();
+    return new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = () => reject(reader.error || new Error('File read failed.')); reader.onabort = () => reject(new Error('File read cancelled.')); reader.readAsText(file); });
+  }
+  async function importFile(file) {
+    const version = ++importVersion; restoring = false; lastFile = file; invalidate(); $('error').textContent = ''; $('storage').textContent = 'Reading ' + file.name + '...'; show('retry-file', false);
+    try { const raw = await readFile(file); const parsed = parseCSV(raw); if (version === importVersion) install(raw, parsed, true); }
+    catch (error) { if (version === importVersion) { $('storage').textContent = ''; show('retry-file', true); $('error').textContent = 'Import failed: ' + (error.message || String(error)) + (library.length ? ' Your existing library is unchanged.' : ' Choose a CSV to retry.'); } }
+    finally { if (version === importVersion) mountPicker(); }
+  }
+  function mountPicker() {
+    const label = text('label', 'Choose CSV', 'input-label'); label.htmlFor = 'file';
+    const picker = document.createElement('input'); picker.id = 'file'; picker.type = 'file'; picker.accept = '.csv,text/csv';
+    picker.addEventListener('change', () => { const file = picker.files && picker.files[0]; if (file) void importFile(file); });
+    $('picker-host').replaceChildren(label, picker);
+  }
+  $('retry-file').addEventListener('click', () => { if (lastFile) void importFile(lastFile); });
+  $('replace').addEventListener('click', () => { show('import-panel', true); show('browse', false); resetChoice(); });
+  $('cancel-import').addEventListener('click', () => { show('import-panel', false); show('browse', true); $('error').textContent = ''; });
+  $('retry-save').addEventListener('click', save);
+  $('search').addEventListener('input', event => { query = ($('search').value || '').trim().toLowerCase(); resetChoice(); renderEntries(); $('entries').scrollTop = 0; });
+  $('retry-preview').addEventListener('click', previewCopy);
+  $('apply').addEventListener('click', () => { if (!confirmation || busy) return; busy = true; disabled('apply', true); show('retry-preview', false); $('action-status').textContent = 'Applying...'; send({ type: 'apply', token: confirmation.token }); });
+  function handshake() { send({ type: 'ready' }); }
+  $('reconnect').addEventListener('click', handshake);
+  window.addEventListener('message', event => {
+    const message = event.data && event.data.pluginMessage; if (!message) return;
+    if (message.type === 'ready') { const changed = !connected; connected = true; $('bridge').textContent = 'Connected to Figma'; show('bridge', false); show('reconnect', false); if (changed) { invalidate(); previewCopy(); } }
+    else if (message.type === 'restore' && restoring && !importVersion) {
+      restoring = false;
+      $('storage').textContent = '';
+      if (message.csv !== null) { try { install(message.csv, parseCSV(message.csv), false); } catch (error) { $('error').textContent = 'Saved library invalid: ' + error.message + '. Import a CSV to replace it.'; } }
+    } else if (message.type === 'saved' && message.request === saveRequest) { $('storage').textContent = ''; show('retry-save', false); }
+    else if (message.type === 'storage-error' && (message.request === undefined || message.request === saveRequest)) { $('storage').textContent = message.message; show('retry-save', !!library.length); }
+    else if (message.type === 'selection') {
+      $('selection').textContent = message.ignored ? message.ignored + ' non-editable layer' + (message.ignored === 1 ? '' : 's') + ' ignored.' : '';
+      const changed = signature !== message.signature || eligibleCount !== message.targets.length;
+      signature = message.signature; eligibleCount = message.targets.length;
+      if (changed) { invalidate(); previewCopy(); }
+    } else if (message.type === 'preview' && message.request === request && message.copy === copy && message.signature === signature && eligibleCount > 0 && !busy) {
+      clearTimeout(previewTimer); previewTimer = null;
+      confirmation = message; disabled('apply', false); show('retry-preview', false); $('action-status').textContent = '';
+      $('apply').textContent = 'Apply to ' + message.targets.length + ' text layer' + (message.targets.length === 1 ? '' : 's');
+    } else if (message.type === 'applied') { busy = false; invalidate(); $('action-status').textContent = ''; show('retry-preview', copy !== null && connected && eligibleCount > 0); $('result').textContent = 'Applied to ' + message.count + ' text layer' + (message.count === 1 ? '' : 's') + '.'; }
+    else if (message.type === 'error' && (message.request === undefined || message.request === request)) { busy = false; invalidate(); $('error').textContent = message.message; $('action-status').textContent = ''; $('result').textContent = ''; show('retry-preview', copy !== null && connected && eligibleCount > 0); }
+  });
+  mountPicker(); handshake();
+  let attempts = 0;
+  const retry = setInterval(() => { if (connected) { clearInterval(retry); return; } if (++attempts <= 3) handshake(); else { clearInterval(retry); if (restoring && !importVersion) $('storage').textContent = ''; $('bridge').textContent = 'Figma bridge unavailable. You can still import and browse; applying and saving require a connection.'; show('bridge', true); show('reconnect', true); } }, 1200);
+  let lastHeight = 0;
+  new ResizeObserver(() => { const height = Math.min(720, Math.ceil($('plugin-root').getBoundingClientRect().height)); if (height !== lastHeight) { lastHeight = height; send({ type: 'resize', height }); } }).observe($('plugin-root'));
+})();
+</script></body></html>
