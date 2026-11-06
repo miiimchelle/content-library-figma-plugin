@@ -6,27 +6,39 @@ A Figma plugin that turns a CSV of your team's copy into a searchable library in
 
 - Import a CSV content library. It is remembered on your device between sessions.
 - Search across key, subcategory, heading, body, CTAs and source file.
-- Filter by category and by content type (Heading, Body, CTA).
+- Filter by category and by content type (Heading, Body, CTA) from a collapsible **Filters** panel. A badge shows how many filters are active.
 - Entries are grouped by source file, with headings, body text and each CTA as its own selectable card.
+- **Multi-field mode**: Fill multiple layers from a single entry. Enable the checkbox to apply all fields (heading, body, CTAs) at once. The plugin matches layers by name (e.g., "heading", "body", "cta") or by selection order.
 - Preview before applying: the plugin shows how many text layers will change.
+- A toast on the canvas confirms each apply (or reports an error).
+- Copy any heading, body or CTA to the clipboard with the copy button on its row, without applying it.
+- The window is resizable from the corner handle and remembers its size.
 - Safe writes: fonts are loaded first, and the selection is re-checked right before text is changed.
 - No network access. Your content never leaves your device.
 
 ## CSV format
 
-The first row must contain exactly these seven headers (in any order):
+A `key` column and at least one of `heading`, `body` or `ctas` are required. Everything else is optional.
 
 | Header | Description |
 | --- | --- |
-| `category` | Top-level group, used for the category filter |
-| `subcategory` | Secondary label, included in search |
-| `key` | Unique identifier for the entry |
+| `key` | Unique identifier for the entry (required) |
 | `heading` | Heading copy |
 | `body` | Body copy |
 | `ctas` | One or more CTAs, separated by `\|` |
+| `category` | Top-level group, used for the category filter |
+| `subcategory` | Secondary label, shown on the card and searchable |
 | `source_file` | Used to group entries in the library |
 
-Fields containing commas or line breaks must be wrapped in double quotes. A ready-made example is in [sample-content.csv](sample-content.csv).
+The importer is forgiving:
+
+- Column order and header case don't matter (`Source File` works), and extra columns are ignored.
+- Commas, semicolons and tabs are detected automatically, so Excel exports in any locale work. Use **Save As → CSV UTF-8**.
+- Rows with a problem (no key, no copy, too many cells) are skipped and listed after import. The rest still import.
+- Duplicate keys import but produce a warning.
+- Importing over an existing library asks you to confirm first.
+
+Fields containing the delimiter or line breaks must be wrapped in double quotes. A ready-made example is in [sample-content.csv](sample-content.csv), and the plugin has a **Try sample data** button.
 
 ```csv
 category,subcategory,key,heading,body,ctas,source_file
@@ -35,10 +47,25 @@ onboarding,welcome,welcome_01,Welcome aboard,"Let's get you set up in just a few
 
 ## Usage
 
+### Single-field mode (default)
+
 1. Select one or more text layers in Figma.
 2. Open the plugin and import your CSV (or use **Import CSV** to replace the library).
 3. Search or filter, then click a heading, body or CTA card.
 4. Click **Apply to N text layers**.
+
+The selected text will be applied to all selected layers.
+
+### Multi-field mode
+
+1. Select multiple text layers (e.g., a card's heading, body, and button).
+2. Enable **Fill multiple layers from one entry** checkbox.
+3. Click **All fields** on an entry card.
+4. Click **Apply N fields to N layers**.
+
+The plugin fills each layer based on:
+- **Layer name matching**: Layers named "heading", "body", "cta", or "button" get the corresponding field.
+- **Selection order**: If names don't match, the first selected layer gets the first field, second gets second field, etc.
 
 What gets changed:
 
@@ -53,9 +80,10 @@ Requires Node.js and Figma desktop.
 
 ```sh
 npm install
-npm run build      # compile code.ts to code.js
-npm run watch      # recompile on change
+npm run build      # compile code.ts and csv.ts, then assemble ui.html
+npm test           # compile and run the CSV parser tests
 npm run typecheck  # type-check without emitting
+npm run watch      # recompile TypeScript on change (re-run build for ui.html)
 ```
 
 To load the plugin in Figma, go to **Plugins → Development → Import plugin from manifest…** and choose [manifest.json](manifest.json).
@@ -65,11 +93,14 @@ To load the plugin in Figma, go to **Plugins → Development → Import plugin f
 | File | Purpose |
 | --- | --- |
 | [code.ts](code.ts) | Plugin main thread: selection handling, previews, font loading, applying text, storage |
-| [ui.html](ui.html) | Plugin UI: CSV parsing, search, filters and the browsing interface |
+| [csv.ts](csv.ts) | CSV parser (pure, no DOM or Figma APIs) |
+| [csv.test.js](csv.test.js) | Parser tests, run with Node's built-in test runner |
+| [ui.src.html](ui.src.html) | Plugin UI source: search, filters, import flow |
+| [build.mjs](build.mjs) | Inlines the compiled parser and sample CSV into `ui.src.html` to produce `ui.html` |
 | [manifest.json](manifest.json) | Figma plugin manifest |
 | [sample-content.csv](sample-content.csv) | Example library for testing |
 
-The built `code.js` is generated by `npm run build` and is not committed.
+`code.js`, `csv.js` and `ui.html` are generated by `npm run build` and are not committed. Edit `ui.src.html`, not `ui.html`.
 
 ## Privacy
 

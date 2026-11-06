@@ -4,9 +4,10 @@
   "private": true,
   "description": "Figma plugin: import, search and apply a CSV content library to selected text layers.",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && node build.mjs",
     "watch": "tsc --watch",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "tsc && node --test csv.test.js"
   },
   "devDependencies": {
     "@figma/plugin-typings": "^1.142.0",

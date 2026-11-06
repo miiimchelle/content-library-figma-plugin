@@ -1,270 +1,630 @@
 <!doctype html>
-<html><head>
-<script>
-try { window.localStorage.getItem('x'); } catch (e) {
-  const store = new Map();
-  Object.defineProperty(window, 'localStorage', { configurable: true, value: {
-    getItem: k => store.has(k) ? store.get(k) : null,
-    setItem: (k, v) => { store.set(k, String(v)); }, removeItem: k => { store.delete(k); },
-    clear: () => { store.clear(); }, key: i => Array.from(store.keys())[i] ?? null,
-    get length() { return store.size; }
-  }});
-}
-</script>
+<html lang="en">
+<head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Content library</title>
 <style>
-html,body{margin:0;padding:0;overflow:hidden;background:var(--figma-color-bg,#fff);color:var(--figma-color-text,#222);font:12px/1.5 sans-serif}
-*{box-sizing:border-box;min-width:0}#plugin-root{height:640px;width:100%;display:flex;flex-direction:column}h1{font-size:14px;margin:0}h2{font-size:12px;margin:0 0 6px}p{margin:4px 0}.muted,.field-label{color:var(--figma-color-text-secondary,#666)}
-[hidden]{display:none!important}.copy{white-space:pre-wrap;overflow-wrap:anywhere}.topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 12px 4px}.topbar h1{flex:1}.topbar button{flex:none}#library-summary{padding:0 12px;margin:0;font-size:11px}#storage{padding:0 12px;font-size:11px}#storage:empty,#error:empty,#result:empty{display:none}#bridge{padding:0 12px}#reconnect,#retry-save{margin:4px 12px}#error{color:var(--figma-color-text-danger,#b3261e);padding:8px 12px;max-height:100px;overflow:auto;flex:none}#import-panel{padding:20px 12px;overflow:auto}#import-panel p{margin-bottom:12px}#picker-host{margin:16px 0}#browse{display:flex;flex-direction:column;flex:1;min-height:0}#browse-tools{padding:12px;border-bottom:1px solid var(--figma-color-border,#ddd)}.filters{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}.filters label{display:block;font-size:11px;margin-bottom:4px}input[type=search],input[type=file]{display:block;width:100%;font:inherit;color:inherit;background:var(--figma-color-bg,#fff);border:1px solid var(--figma-color-border,#ddd);border-radius:5px;padding:5px 8px}input[type=search]:focus-visible,input[type=file]:focus-visible{outline:2px solid var(--figma-color-border-brand,#087df0);outline-offset:-1px}.input-label{display:block;font-size:11px;margin-bottom:4px;color:var(--figma-color-text-secondary,#666)}button{max-width:100%}#result-count{margin-top:8px;font-size:11px}#entries{flex:1;overflow-y:auto;overscroll-behavior:contain;padding:0 12px 12px;scrollbar-gutter:stable}#entries:focus-visible,summary:focus-visible{outline:2px solid var(--figma-color-border-brand,#087df0);outline-offset:-2px}.card{border-bottom:1px solid var(--figma-color-border,#ddd);padding:16px 0}.entry-meta{margin-bottom:8px;font-size:11px}.entry-meta summary{cursor:pointer;overflow-wrap:anywhere}.entry-meta p{overflow-wrap:anywhere}
-.field-choice{padding:10px 6px;border:1px solid transparent;border-radius:5px}.field-choice+.field-choice{border-top-color:var(--figma-color-border,#ddd);margin-top:6px}.field-header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}.field-header button{flex:none}.field-label{font-size:11px;font-weight:600}.field-choice>.copy{display:block;margin:0}.field-choice[data-selected=true]{border-color:var(--figma-color-border-brand,#087df0);background:var(--figma-color-bg-selected,#e5f4ff)}.field-choice[data-selected=true] .field-label{color:var(--figma-color-text-brand,#0675df)}.choice-row:focus-within{outline:2px solid var(--figma-color-border-brand,#087df0);outline-offset:2px}.empty{padding:28px 0}.empty h2{font-size:13px}.empty p{margin:8px 0 12px}
-#actions{display:block;flex:none;padding:10px 12px 12px;border-top:1px solid var(--figma-color-border,#ddd);background:var(--figma-color-bg,#fff);overflow-wrap:anywhere}#chosen{margin-bottom:6px}#chosen-label{font-size:11px}#review{margin:6px 0}#review summary{cursor:pointer;font-size:11px;color:var(--figma-color-text-secondary,#666)}#review-content{max-height:120px;overflow-y:auto;padding:6px 0}#targets .card{padding:6px 0}#chosen-text{margin:0 0 8px}#preview-count{font-size:11px}#action-status,#result{font-size:11px;margin:4px 0 8px}#selection{font-size:11px;margin:0 0 4px;color:var(--figma-color-text-secondary,#666)}#retry-preview{margin-bottom:6px}
-.category-heading{display:flex;justify-content:space-between;gap:8px;margin-top:8px;font-size:11px}#category-hint{flex:none}#categories{display:flex;gap:6px;overflow-x:auto;overscroll-behavior-x:contain;padding:4px 0 6px}#categories button{flex:none;width:max-content;max-width:none;white-space:nowrap}#categories button[selected]{background:var(--figma-color-bg-selected,#e5f4ff);color:var(--figma-color-text-brand,#0675df);border-radius:5px}#category-current{overflow-wrap:anywhere}.subcategory-filter{display:flex;align-items:center;gap:8px}.subcategory-filter label{flex:none;font-size:11px}#browse-tools{flex:none}
-.subcategory-filter{display:block;margin-top:4px}.subcategory-filter>span{display:block;font-size:11px;margin-bottom:4px}#subcategories{display:flex;flex-wrap:wrap;gap:4px}#subcategories button{flex:none;width:max-content;max-width:none;white-space:nowrap}#subcategories button[selected]{background:var(--figma-color-bg-selected,#e5f4ff);color:var(--figma-color-text-brand,#0675df);border-radius:5px}
-#action-status:empty,#selection:empty{display:none}
-.copy-section>article.card{border:0;padding:0;margin:8px 0}.choice-row{display:block;width:100%;height:auto;cursor:pointer;border-radius:5px;background:var(--figma-color-bg-secondary,#f5f5f5)}.choice-row:hover{background:var(--figma-color-bg-hover,var(--figma-color-bg-secondary))}.choice-row:focus-visible{outline:2px solid var(--figma-color-border-brand);outline-offset:2px}.choice-state{font-size:11px;color:var(--figma-color-text-brand)}
-button{font:inherit;color:var(--figma-color-text,#222);background:var(--figma-color-bg-secondary,#f5f5f5);border:1px solid var(--figma-color-border,#ddd);border-radius:5px;padding:5px 12px;cursor:pointer;text-align:center}
-button:hover:not([disabled]){background:var(--figma-color-bg-hover,#eaeaea)}button:focus-visible{outline:2px solid var(--figma-color-border-brand,#087df0);outline-offset:2px}
-button[disabled]{opacity:.4;cursor:default}button[full]{display:block;width:100%}button[size=compact]{padding:2px 8px;font-size:11px}
-button[variant=primary]{background:var(--figma-color-bg-brand,#0d99ff);border-color:transparent;color:var(--figma-color-text-onbrand,#fff)}button[variant=primary]:hover:not([disabled]){background:var(--figma-color-bg-brand-hover,#0b84dd)}
-button[variant=ghost]{background:transparent;border-color:transparent;color:var(--figma-color-text-brand,#0675df)}button[variant=ghost]:hover:not([disabled]){background:var(--figma-color-bg-hover,#eaeaea)}
-.choice-row{text-align:left;color:inherit}
-#actions{position:sticky;bottom:0}
-</style></head><body>
-<div id="plugin-root">
-<header class="topbar"><h1>Content library</h1><button id="replace" variant="ghost" size="compact" hidden>Import CSV</button></header>
-<p id="storage" class="muted" role="status">Checking saved library...</p><button id="retry-save" variant="ghost" hidden>Retry saving</button>
-<p id="bridge" class="muted" role="status" hidden>Connecting to Figma...</p>
-<button id="reconnect" variant="secondary" hidden>Retry connection</button>
-<section id="import-panel">
-<h2>Import your CSV</h2><p>Upload your team's copy to get started. Your library is remembered on this device.</p>
-<p class="muted">Headers: category, subcategory, key, heading, body, ctas, source_file</p>
-<div id="picker-host"></div>
-<button id="retry-file" variant="secondary" hidden>Read this file again</button>
-<button id="cancel-import" variant="ghost" hidden>Back to library</button>
-</section>
-<p id="error" role="alert"></p>
-<section id="browse" hidden>
-<section id="browse-tools" aria-label="Find copy">
-<label class="input-label" for="search">Search library</label><input id="search" type="search" placeholder="Search copy, key, source or subcategory" autocomplete="off">
-<div class="category-heading"><span id="category-label">Category</span><span id="category-hint" class="muted">Scroll for more &gt;</span></div>
-<div id="categories" role="group" aria-labelledby="category-label" aria-describedby="category-hint"></div>
-<div class="subcategory-filter"><span id="subcategory-label">Content type</span><div id="subcategories" role="group" aria-labelledby="subcategory-label"></div></div>
-<div style="display:flex;align-items:center;justify-content:space-between"><p id="result-count" class="muted" role="status"></p><button id="clear-filters" variant="ghost" size="compact" hidden>Clear</button></div>
-</section>
-<div id="entries" role="region" tabindex="0" aria-label="Copy entries"></div>
-<div id="actions">
-<p id="selection" class="muted"></p>
-<p id="action-status" role="status">Choose content to apply.</p>
-<button id="retry-preview" variant="secondary" full hidden>Try again</button>
-<button id="apply" variant="primary" full disabled>Apply</button>
-<p id="result" role="status"></p>
+/* Styled after Figma's UI3 plugin look. Colours come from Figma's injected theme variables
+   (themeColors: true), so light and dark mode follow the editor. Fallbacks are the light theme. */
+:root {
+  --bg: var(--figma-color-bg, #fff);
+  --bg-secondary: var(--figma-color-bg-secondary, #f5f5f5);
+  --bg-hover: var(--figma-color-bg-hover, #f0f0f0);
+  --bg-selected: var(--figma-color-bg-selected, #e5f4ff);
+  --bg-brand: var(--figma-color-bg-brand, #0d99ff);
+  --bg-brand-hover: var(--figma-color-bg-brand-hover, #0b84dd);
+  --bg-warning: var(--figma-color-bg-warning-tertiary, #fff6e0);
+  --bg-danger: var(--figma-color-bg-danger-tertiary, #ffebe8);
+  --text: var(--figma-color-text, #000);
+  --text-secondary: var(--figma-color-text-secondary, #666);
+  --text-tertiary: var(--figma-color-text-tertiary, #999);
+  --text-brand: var(--figma-color-text-brand, #0d99ff);
+  --text-onbrand: var(--figma-color-text-onbrand, #fff);
+  --text-danger: var(--figma-color-text-danger, #f24822);
+  --border: var(--figma-color-border, #e6e6e6);
+  --border-strong: var(--figma-color-border-strong, #c4c4c4);
+  --border-brand: var(--figma-color-border-brand, #0d99ff);
+}
+* { box-sizing: border-box; min-width: 0; }
+html, body { height: 100%; margin: 0; overflow: hidden; background: var(--bg); color: var(--text);
+  font: 11px/16px Inter, system-ui, -apple-system, 'Segoe UI', sans-serif; -webkit-font-smoothing: antialiased; }
+[hidden] { display: none !important; }
+h1, h2, h3, p { margin: 0; }
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--border-brand); outline-offset: -1px; }
+
+#app { height: 100%; display: flex; flex-direction: column; }
+.row { display: flex; align-items: center; gap: 8px; }
+.grow { flex: 1; }
+.secondary { color: var(--text-secondary); }
+.copy { white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* Header */
+header { padding: 8px 8px 8px 12px; border-bottom: 1px solid var(--border); flex: none; min-height: 41px; }
+header h1 { font-size: 11px; font-weight: 600; }
+
+/* Buttons */
+.btn { height: 32px; padding: 0 12px; border-radius: 6px; border: 1px solid var(--border-strong); background: transparent; cursor: pointer; font-weight: 500; white-space: nowrap; }
+.btn:hover:not(:disabled) { background: var(--bg-hover); }
+.btn.primary { background: var(--bg-brand); border-color: transparent; color: var(--text-onbrand); }
+.btn.primary:hover:not(:disabled) { background: var(--bg-brand-hover); }
+.btn.block { width: 100%; }
+.btn.small { height: 24px; padding: 0 8px; }
+.btn.ghost { border-color: transparent; color: var(--text-brand); }
+.btn:disabled { opacity: .4; cursor: default; }
+.link { background: none; border: 0; padding: 0; color: var(--text-brand); cursor: pointer; }
+.link:hover { text-decoration: underline; }
+
+/* Inputs */
+.field { display: block; width: 100%; height: 28px; padding: 0 8px; border: 1px solid var(--border); border-radius: 5px; background: var(--bg); }
+.field:hover { border-color: var(--border-strong); }
+.field:focus { outline: 0; border-color: var(--border-brand); box-shadow: inset 0 0 0 1px var(--border-brand); }
+select.field { padding-right: 4px; }
+.label { display: block; margin-bottom: 4px; color: var(--text-secondary); }
+
+/* Notices */
+.notice { margin: 8px 12px 0; padding: 8px; border-radius: 6px; background: var(--bg-secondary); flex: none; }
+.notice.error { background: var(--bg-danger); color: var(--text-danger); max-height: 120px; overflow: auto; }
+.notice.warning { background: var(--bg-warning); }
+.notice details { margin-top: 4px; }
+.notice summary { cursor: pointer; color: var(--text-secondary); }
+.notice ul { margin: 4px 0 0; padding-left: 16px; max-height: 96px; overflow: auto; }
+
+/* Import */
+#import-panel { padding: 16px 12px; overflow: auto; flex: 1; }
+#import-panel h2 { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+#import-panel .stack > * + * { margin-top: 8px; }
+.stack { margin-top: 16px; }
+#format { margin-top: 16px; }
+#format summary { cursor: pointer; color: var(--text-secondary); }
+#format table { margin-top: 8px; border-collapse: collapse; width: 100%; }
+#format td { padding: 2px 0; vertical-align: top; }
+#format td:first-child { width: 96px; font-family: ui-monospace, Menlo, monospace; font-size: 10px; }
+#confirm { margin-top: 16px; padding: 12px; border: 1px solid var(--border-strong); border-radius: 8px; }
+#confirm .row { margin-top: 12px; }
+
+/* Browse */
+#browse { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+#tools { padding: 8px 12px; border-bottom: 1px solid var(--border); flex: none; }
+#tools > * + * { margin-top: 8px; }
+.segmented { display: flex; border: 1px solid var(--border); border-radius: 6px; padding: 2px; gap: 2px; }
+.segmented button { flex: 1; height: 22px; border: 0; border-radius: 4px; background: transparent; cursor: pointer; color: var(--text-secondary); }
+.segmented button:hover { background: var(--bg-hover); }
+.segmented button[aria-pressed=true] { background: var(--bg-selected); color: var(--text-brand); font-weight: 500; }
+#count-row { justify-content: space-between; min-height: 24px; }
+
+#entries { flex: 1; overflow-y: auto; overscroll-behavior: contain; padding-bottom: 8px; }
+.source { position: sticky; top: 0; z-index: 1; padding: 6px 12px; background: var(--bg); border-bottom: 1px solid var(--border); font-weight: 600; color: var(--text-secondary); overflow-wrap: anywhere; }
+.entry { padding: 8px 12px 4px; }
+.entry + .entry { border-top: 1px solid var(--border); }
+.entry-meta { display: flex; flex-wrap: wrap; gap: 0 8px; margin-bottom: 4px; }
+.entry-key { font-weight: 600; overflow-wrap: anywhere; }
+.entry-where { color: var(--text-tertiary); }
+.choice-wrap { position: relative; margin-bottom: 4px; }
+.choice { display: block; width: 100%; text-align: left; padding: 6px 32px 6px 8px; border: 1px solid transparent; border-radius: 6px; background: var(--bg-secondary); cursor: pointer; }
+.choice:hover { background: var(--bg-hover); }
+.choice[aria-pressed=true] { background: var(--bg-selected); border-color: var(--border-brand); }
+.choice-label { display: block; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .02em; color: var(--text-tertiary); margin-bottom: 2px; }
+.choice[aria-pressed=true] .choice-label { color: var(--text-brand); }
+.empty { padding: 32px 12px; text-align: center; }
+.empty h2 { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+.empty .btn { margin-top: 12px; }
+#more { margin: 8px 12px; width: calc(100% - 24px); }
+
+/* Copy button: sibling of the choice button (buttons can't nest), top-right of the row */
+.copy-btn { position: absolute; top: 4px; right: 4px; width: 24px; height: 24px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 4px; background: transparent; color: var(--text-secondary); cursor: pointer; opacity: 0; }
+.choice-wrap:hover .copy-btn, .copy-btn:focus-visible, .copy-btn.done { opacity: 1; }
+.copy-btn:hover { background: var(--bg-hover); color: var(--text); }
+.copy-btn.done { color: var(--text-brand); }
+@media (hover: none) { .copy-btn { opacity: 1; } }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* Filters button and panel */
+.filters-btn { height: 28px; padding: 0 10px; display: inline-flex; align-items: center; gap: 6px; flex: none; }
+.filters-btn[aria-expanded=true] { background: var(--bg-selected); border-color: var(--border-brand); color: var(--text-brand); }
+.badge { min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--bg-brand); color: var(--text-onbrand); font-size: 10px; line-height: 16px; text-align: center; }
+#filter-panel > * + * { margin-top: 8px; }
+
+/* Loading skeleton: fades in after a short delay so fast restores never flash it */
+#loading { flex: 1; padding: 12px; overflow: hidden; opacity: 0; animation: fade-in .2s ease 150ms forwards; }
+.skel { height: 56px; margin-bottom: 8px; border-radius: 6px; background: linear-gradient(90deg, var(--bg-secondary) 25%, var(--bg-hover) 50%, var(--bg-secondary) 75%); background-size: 200% 100%; animation: shimmer 1.4s linear infinite; }
+.skel.line { height: 12px; width: 40%; border-radius: 4px; }
+@keyframes fade-in { to { opacity: 1; } }
+@keyframes shimmer { to { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) { .skel { animation: none; } }
+
+/* Window resize grip (bottom-right corner) */
+#grip { position: fixed; right: 0; bottom: 0; width: 16px; height: 16px; cursor: nwse-resize; touch-action: none; z-index: 10; color: var(--text-tertiary); }
+#grip:hover, #grip.dragging { color: var(--text-secondary); }
+#grip svg { display: block; }
+
+/* Footer */
+#actions { flex: none; padding: 8px 12px 12px; border-top: 1px solid var(--border); background: var(--bg); }
+#status { min-height: 16px; margin-bottom: 8px; color: var(--text-secondary); overflow-wrap: anywhere; }
+#status:empty { display: none; }
+#result { margin-top: 8px; color: var(--text-secondary); }
+#result:empty { display: none; }
+#storage { padding: 4px 12px 0; color: var(--text-secondary); flex: none; }
+#storage:empty { display: none; }
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="row">
+    <h1 class="grow">Content library</h1>
+    <button id="open-import" class="btn small ghost" hidden>Import CSV</button>
+  </header>
+
+  <p id="storage" role="status"></p>
+  <div id="bridge" class="notice warning" hidden>
+    <p id="bridge-text">Connecting to Figma…</p>
+    <button id="reconnect" class="btn small" style="margin-top:8px" hidden>Retry connection</button>
+  </div>
+  <div id="error" class="notice error" role="alert" hidden></div>
+  <div id="report" class="notice" hidden></div>
+
+  <section id="loading" aria-busy="true" aria-label="Loading library">
+    <div class="skel line"></div><div class="skel"></div>
+    <div class="skel line"></div><div class="skel"></div>
+    <div class="skel line"></div><div class="skel"></div>
+  </section>
+
+  <section id="import-panel" hidden>
+    <h2>Import your content</h2>
+    <p class="secondary">Choose a CSV of your team's copy. The library is remembered on this device.</p>
+    <div class="stack">
+      <input id="file" type="file" accept=".csv,text/csv" hidden>
+      <button id="choose" class="btn primary block">Choose CSV file</button>
+      <button id="sample" class="btn block">Try sample data</button>
+      <button id="cancel-import" class="btn ghost block" hidden>Back to library</button>
+    </div>
+    <div id="confirm" hidden>
+      <p id="confirm-text"></p>
+      <div id="confirm-report"></div>
+      <div class="row">
+        <button id="confirm-replace" class="btn primary grow">Replace library</button>
+        <button id="confirm-cancel" class="btn grow">Cancel</button>
+      </div>
+    </div>
+    <details id="format">
+      <summary>CSV format</summary>
+      <p class="secondary" style="margin-top:8px">Needs a <b>key</b> column and at least one of heading, body or ctas. Column order and case don't matter, and extra columns are ignored. Commas, semicolons and tabs are all fine.</p>
+      <table>
+        <tr><td>key</td><td>Unique ID for the entry (required)</td></tr>
+        <tr><td>heading</td><td>Heading copy</td></tr>
+        <tr><td>body</td><td>Body copy</td></tr>
+        <tr><td>ctas</td><td>One or more CTAs separated by |</td></tr>
+        <tr><td>category</td><td>Used for the category filter</td></tr>
+        <tr><td>subcategory</td><td>Shown on the card, searchable</td></tr>
+        <tr><td>source_file</td><td>Groups entries in the list</td></tr>
+      </table>
+    </details>
+  </section>
+
+  <section id="browse" hidden>
+    <div id="tools">
+      <div class="row">
+        <input id="search" class="field grow" type="search" aria-label="Search library" placeholder="Search copy, key, category or source" autocomplete="off">
+        <button id="filters-toggle" class="btn filters-btn" type="button" aria-expanded="false" aria-controls="filter-panel">Filters<span id="filter-badge" class="badge" hidden></span></button>
+      </div>
+      <div id="filter-panel" hidden>
+        <div>
+          <label class="label" for="category">Category</label>
+          <select id="category" class="field"></select>
+        </div>
+        <div>
+          <span class="label" id="type-label">Content type</span>
+          <div id="types" class="segmented" role="group" aria-labelledby="type-label"></div>
+        </div>
+      </div>
+      <div id="count-row" class="row">
+        <p id="count" class="secondary" role="status"></p>
+        <button id="clear" class="btn small ghost" hidden>Clear filters</button>
+      </div>
+    </div>
+    <div id="entries" role="region" aria-label="Library entries" tabindex="0"></div>
+    <div id="actions">
+      <p id="selection" class="secondary" hidden></p>
+      <label style="display: flex; align-items: center; gap: 6px; margin-bottom: 8px; cursor: pointer;" title="Apply all fields (heading, body, CTA) from one entry to multiple selected layers. Matches by layer name or selection order.">
+        <input id="multi-mode" type="checkbox" style="margin: 0;">
+        <span class="secondary" style="font-size: 11px;">Fill multiple layers from one entry</span>
+      </label>
+      <p id="status" role="status">Choose content to apply.</p>
+      <button id="retry" class="btn block" style="margin-bottom:8px" hidden>Try again</button>
+      <button id="apply" class="btn primary block" disabled>Apply</button>
+      <p id="result" role="status"></p>
+    </div>
+  </section>
 </div>
-</section>
+<p id="live" class="sr" role="status"></p>
+<div id="grip" role="separator" aria-label="Resize window" title="Drag to resize">
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><path d="M14 6 6 14M14 10l-4 4"/></svg>
 </div>
+
 <script>
+/*__CSV_PARSER__*/
+/*__SAMPLE_CSV__*/
 (() => {
+  const { parseCSV } = csvModule;
   const $ = id => document.getElementById(id);
-  const headers = ['category','subcategory','key','heading','body','ctas','source_file'];
-  const contentTypes = [['Heading', 'Headings'], ['Body', 'Body'], ['CTA', 'CTA']];
-  const hasType = (item, type) => (type === 'Heading' ? item.heading : type === 'Body' ? item.body : item.ctas.split('|').map(value => value.trim()).filter(Boolean).join('')).trim().length > 0;
-  let library = [], csv = '', category = null, subcategory = null, query = '', entry = null, copy = null, fieldLabel = null;
-  let confirmation = null, request = 0, importVersion = 0, lastFile = null, connected = false, restoring = true, signature = null, eligibleCount = 0, busy = false, saveRequest = 0, previewTimer = null;
+  const TYPES = [[null, 'All'], ['Heading', 'Heading'], ['Body', 'Body'], ['CTA', 'CTA']];
+  const PAGE = 100;
+  const plural = (n, word, many) => n + ' ' + (n === 1 ? word : many || word + 's');
+  const entries = n => plural(n, 'entry', 'entries');
+  const human = value => value.replace(/[_-]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  const ICON_COPY = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"><rect x="5.5" y="5.5" width="8" height="8" rx="1.5"/><path d="M10.5 3.5v-1a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h1"/></svg>';
+  const ICON_CHECK = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8.5l3 3 6-7"/></svg>';
   const send = message => parent.postMessage({ pluginMessage: message }, '*');
   const show = (id, visible) => { $(id).hidden = !visible; };
-  const disabled = (id, value) => $(id).toggleAttribute('disabled', value);
-  const text = (tag, value, className) => { const el = document.createElement(tag); el.textContent = value; if (className) el.className = className; return el; };
-  function button(label, action) { const el = text('button', label); el.setAttribute('variant', 'secondary'); el.addEventListener('click', action); return el; }
-  const human = value => value.replace(/[_-]+/g, ' ').replace(/\b\w/g, ch => ch.toUpperCase()) || '(empty)';
-  function parseCSV(raw) {
-    if (typeof raw !== 'string') throw new Error('CSV must be text.');
-    const input = raw.charCodeAt(0) === 0xfeff ? raw.slice(1) : raw;
-    const rows = []; let row = [], cell = '', quoted = false, closed = false;
-    function finishCell() { row.push(cell); cell = ''; closed = false; }
-    function finishRow() { finishCell(); rows.push(row); row = []; }
-    for (let i = 0; i < input.length; i++) {
-      const ch = input[i];
-      if (quoted) {
-        if (ch === '"') { if (input[i + 1] === '"') { cell += '"'; i++; } else { quoted = false; closed = true; } }
-        else cell += ch;
-      } else if (ch === ',') finishCell();
-      else if (ch === '\r' || ch === '\n') { finishRow(); if (ch === '\r' && input[i + 1] === '\n') i++; }
-      else if (ch === '"' && !cell && !closed) quoted = true;
-      else { if (closed || ch === '"') throw new Error('Invalid CSV quoting near character ' + (i + 1) + '.'); cell += ch; }
-    }
-    if (quoted) throw new Error('Unclosed quoted CSV field.');
-    if (cell || row.length || closed) finishRow();
-    if (!rows.length) throw new Error('CSV is empty.');
-    const columns = rows.shift();
-    const duplicate = columns.filter((value, index) => columns.indexOf(value) !== index);
-    const missing = headers.filter(value => !columns.includes(value));
-    if (duplicate.length || missing.length) throw new Error([duplicate.length ? 'Duplicate headers: ' + duplicate.join(', ') : '', missing.length ? 'Missing headers: ' + missing.join(', ') : ''].filter(Boolean).join('. '));
-    if (columns.length !== headers.length) throw new Error('Use only the seven required CSV headers.');
-    const entries = [];
-    rows.forEach((values, index) => {
-      if (values.length === 1 && values[0] === '') return;
-      if (values.length !== columns.length) throw new Error('CSV record ' + (index + 2) + ' has ' + values.length + ' cells; expected seven.');
-      const item = { id: index }; columns.forEach((key, i) => { item[key] = values[i]; }); entries.push(item);
-    });
-    if (!entries.length) throw new Error('CSV contains no copy entries.');
-    return entries;
+  const el = (tag, className, content) => {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (content !== undefined) node.textContent = content;
+    return node;
+  };
+
+  let library = [], csv = '', category = null, type = null, query = '', limit = PAGE;
+  let chosen = null;                 // { id, label, value } or { id, entry, multi: true }
+  let staged = null;                 // parsed file waiting for "Replace library" confirmation
+  let confirmation = null, request = 0, connected = false, restoring = true, importVersion = 0;
+  let signature = null, eligible = 0, busy = false, saveRequest = 0, previewTimer = null, searchTimer = null;
+  let multiMode = false;             // Whether to apply all fields from one entry
+
+  // Leaves the loading skeleton and shows the import screen.
+  function showImportPanel() { show('loading', false); show('import-panel', true); }
+  function setFilterPanel(open) {
+    show('filter-panel', open);
+    $('filters-toggle').setAttribute('aria-expanded', String(open));
   }
+  function updateFilterBadge() {
+    const active = (category !== null ? 1 : 0) + (type !== null ? 1 : 0);
+    $('filter-badge').textContent = active; show('filter-badge', active > 0);
+    $('filters-toggle').setAttribute('aria-label', active ? 'Filters, ' + plural(active, 'active filter') : 'Filters');
+  }
+
+  // ---------- Copy to clipboard ----------
+  // navigator.clipboard can be missing or blocked inside Figma's iframe, so fall back to execCommand.
+  function fallbackCopy(value) {
+    const area = document.createElement('textarea');
+    area.value = value; area.setAttribute('readonly', '');
+    area.style.cssText = 'position:fixed;top:0;left:0;opacity:0';
+    document.body.append(area); area.focus({ preventScroll: true }); area.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (error) { ok = false; }
+    area.remove();
+    return ok;
+  }
+  async function copyText(value, button, label) {
+    let ok = false;
+    try { await navigator.clipboard.writeText(value); ok = true; } catch (error) { ok = fallbackCopy(value); }
+    button.focus({ preventScroll: true });
+    if (!ok) { setError('Could not copy to the clipboard.'); return; }
+    clearTimeout(button.resetTimer);
+    button.innerHTML = ICON_CHECK; button.classList.add('done'); button.setAttribute('aria-label', 'Copied');
+    $('live').textContent = 'Copied ' + label;
+    button.resetTimer = setTimeout(() => {
+      button.innerHTML = ICON_COPY; button.classList.remove('done'); button.setAttribute('aria-label', 'Copy ' + label); $('live').textContent = '';
+    }, 1500);
+  }
+
+  // ---------- Notices ----------
+  function setError(message) { $('error').textContent = message || ''; show('error', !!message); }
+  function buildReport(result, name) {
+    const box = document.createDocumentFragment();
+    box.append(el('p', '', name + ': ' + entries(result.entries.length) +
+      (result.skipped.length ? ', ' + result.skipped.length + ' skipped' : '') + '.'));
+    const details = [
+      ...result.skipped.map(s => 'Row ' + s.row + ' ' + s.reason + '.'),
+      ...result.warnings,
+      ...(result.ignoredColumns.length ? ['Ignored columns: ' + result.ignoredColumns.join(', ') + '.'] : [])
+    ];
+    if (details.length) {
+      const wrap = el('details'), list = el('ul');
+      wrap.append(el('summary', '', plural(details.length, 'note') + ' about this file'));
+      details.slice(0, 50).forEach(text => list.append(el('li', '', text)));
+      if (details.length > 50) list.append(el('li', '', 'and ' + (details.length - 50) + ' more…'));
+      wrap.append(list); box.append(wrap);
+    }
+    return box;
+  }
+  function showReport(result, name) {
+    const box = $('report'); box.replaceChildren(buildReport(result, name));
+    const dismiss = el('button', 'link', 'Dismiss'); dismiss.style.marginTop = '4px';
+    dismiss.addEventListener('click', () => show('report', false));
+    box.append(dismiss);
+    box.classList.toggle('warning', !!(result.skipped.length || result.warnings.length));
+    show('report', true);
+  }
+
+  // ---------- Selection preview / apply ----------
   function invalidate() {
     clearTimeout(previewTimer); previewTimer = null;
-    confirmation = null; request++; disabled('apply', true); show('retry-preview', false); $('apply').textContent = 'Apply';
-    $('action-status').textContent = copy === null ? 'Choose content to apply.' : !connected ? '' : !eligibleCount ? 'Select text layers in Figma.' : 'Checking selection...';
+    confirmation = null; request++;
+    $('apply').disabled = true; $('apply').textContent = 'Apply'; show('retry', false);
+    $('status').textContent = chosen === null ? 'Choose content to apply.' : !connected ? '' : !eligible ? 'Select text layers in Figma.' : 'Checking selection…';
   }
-  function resetChoice() { entry = null; copy = null; fieldLabel = null; invalidate(); }
+  function resetChoice() {
+    chosen = null; invalidate();
+    document.querySelectorAll('.choice[aria-pressed=true]').forEach(b => b.setAttribute('aria-pressed', 'false'));
+    document.querySelectorAll('.apply-all[aria-pressed=true]').forEach(b => b.setAttribute('aria-pressed', 'false'));
+  }
   function previewCopy() {
-    if (copy === null || !connected || !eligibleCount || busy) return;
-    invalidate(); $('error').textContent = '';
-    send({ type: 'preview', copy, request });
-    previewTimer = setTimeout(() => { invalidate(); $('action-status').textContent = 'Could not check selection. Try again.'; show('retry-preview', true); }, 8000);
-  }
-  function save() { saveRequest++; $('storage').textContent = connected ? 'Saving library on this device...' : 'Library available. Not saved: Figma bridge unavailable.'; show('retry-save', !connected); send({ type: 'save', csv, request: saveRequest }); }
-  function install(raw, parsed, persist) {
-    csv = raw; library = parsed; category = null; subcategory = null; query = ''; $('search').value = '';
-    resetChoice(); show('import-panel', false); show('browse', true); show('replace', true); show('cancel-import', true); $('error').textContent = ''; $('result').textContent = '';
-    $('categories').replaceChildren();
-    [null, ...new Set(library.map(item => item.category))].forEach(value => {
-      const choice = button(value === null ? 'All categories' : human(value), () => {
-        filter(value, null); $('entries').scrollTop = 0;
-        choice.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-      });
-      choice.setAttribute('size', 'compact');
-      choice.addEventListener('focusin', () => choice.scrollIntoView({ block: 'nearest', inline: 'nearest' }));
-      choice.categoryValue = value; $('categories').append(choice);
-    });
-    $('categories').scrollLeft = 0;
-    renderFilters(); renderEntries(); if (persist) save();
-  }
-  function renderCategorySelection() {
-    for (const choice of $('categories').children) { const on = choice.categoryValue === category; choice.toggleAttribute('selected', on); choice.setAttribute('aria-pressed', String(on)); }
-  }
-  function renderFilters() {
-    renderCategorySelection();
-    if (!$('subcategories').children.length) {
-      [[null, 'All'], ...contentTypes].forEach(([value, label]) => {
-        const choice = button(label, () => {
-          filter(category, value); $('entries').scrollTop = 0;
-        });
-        choice.setAttribute('size', 'compact');
-        choice.subcategoryValue = value; $('subcategories').append(choice);
-      });
+    if (chosen === null || !connected || !eligible || busy) return;
+    invalidate(); setError('');
+
+    // Multi-field mode: send all fields from the entry
+    if (chosen.multi) {
+      const entry = chosen.entry;
+      const fields = [];
+      if (entry.heading) fields.push({ field: 'Heading', value: entry.heading });
+      if (entry.body) fields.push({ field: 'Body', value: entry.body });
+      entry.ctaList.forEach((cta, i) => fields.push({ field: entry.ctaList.length > 1 ? 'CTA ' + (i + 1) : 'CTA', value: cta }));
+
+      send({ type: 'preview', copy: fields[0]?.value || '', multiMode: true, fields, request });
+    } else {
+      // Single-field mode: send one value
+      send({ type: 'preview', copy: chosen.value, multiMode: false, request });
     }
-    renderSubcategorySelection();
+
+    previewTimer = setTimeout(() => { invalidate(); $('status').textContent = 'Could not check the selection.'; show('retry', true); }, 8000);
   }
-  function renderSubcategorySelection() {
-    for (const choice of $('subcategories').children) { const on = choice.subcategoryValue === subcategory; choice.toggleAttribute('selected', on); choice.setAttribute('aria-pressed', String(on)); }
+
+  // ---------- Library ----------
+  function save() {
+    saveRequest++;
+    $('storage').textContent = connected ? 'Saving library on this device…' : 'Library available, but not saved: Figma is not connected.';
+    send({ type: 'save', csv, request: saveRequest });
   }
-  function filter(cat, sub) { category = cat; subcategory = sub; resetChoice(); $('result').textContent = ''; renderFilters(); renderEntries(); }
+  function install(raw, result, name, persist) {
+    csv = raw; library = result.entries; staged = null;
+    category = null; type = null; query = ''; limit = PAGE; $('search').value = '';
+    const categories = [...new Set(library.map(e => e.category))].sort();
+    $('category').replaceChildren(new Option('All categories', ''), ...categories.map(c => new Option(c ? human(c) : '(no category)', c)));
+    $('category').value = '';
+    resetChoice(); setError('');
+    show('loading', false); show('import-panel', false); show('confirm', false); show('browse', true); show('open-import', true);
+    setFilterPanel(false);
+    $('result').textContent = '';
+    renderTypes(); renderEntries();
+    if (name) showReport(result, name); else show('report', false);
+    if (persist) save();
+  }
+  function hasType(entry, t) { return t === 'Heading' ? !!entry.heading : t === 'Body' ? !!entry.body : entry.ctaList.length > 0; }
+  function matches(entry) {
+    if (category !== null && entry.category !== category) return false;
+    if (type !== null && !hasType(entry, type)) return false;
+    return !query || [entry.key, entry.category, entry.subcategory, entry.heading, entry.body, entry.ctas, entry.source_file, human(entry.key), human(entry.source_file)].some(v => v.toLowerCase().includes(query));
+  }
+  function fieldsOf(entry) {
+    const all = [];
+    if (entry.heading) all.push(['Heading', entry.heading]);
+    if (entry.body) all.push(['Body', entry.body]);
+    entry.ctaList.forEach((cta, i) => all.push([entry.ctaList.length > 1 ? 'CTA ' + (i + 1) : 'CTA', cta]));
+    return all.filter(([label]) => type === null || label.startsWith(type));
+  }
+  function renderTypes() {
+    $('types').replaceChildren(...TYPES.map(([value, label]) => {
+      const b = el('button', '', label); b.type = 'button';
+      b.setAttribute('aria-pressed', String(value === type));
+      b.addEventListener('click', () => { type = value; filtersChanged(); renderTypes(); });
+      return b;
+    }));
+  }
+  function filtersChanged() { limit = PAGE; resetChoice(); $('result').textContent = ''; renderEntries(); $('entries').scrollTop = 0; }
+  function clearFilters() { query = ''; category = null; type = null; $('search').value = ''; $('category').value = ''; renderTypes(); filtersChanged(); }
+  function choose(button, entry, label, value) {
+    if (busy || (chosen && chosen.id === entry.id && chosen.label === label)) return;
+    chosen = { id: entry.id, label, value }; invalidate();
+    document.querySelectorAll('.choice').forEach(b => b.setAttribute('aria-pressed', String(b === button)));
+    document.querySelectorAll('.apply-all').forEach(b => b.setAttribute('aria-pressed', 'false'));
+    $('result').textContent = '';
+    previewCopy();
+  }
+  function chooseMulti(button, entry) {
+    if (busy || (chosen && chosen.id === entry.id && chosen.multi)) return;
+    chosen = { id: entry.id, entry, multi: true }; invalidate();
+    document.querySelectorAll('.choice').forEach(b => b.setAttribute('aria-pressed', 'false'));
+    document.querySelectorAll('.apply-all').forEach(b => b.setAttribute('aria-pressed', String(b === button)));
+    $('result').textContent = '';
+    previewCopy();
+  }
   function renderEntries() {
-    const entries = library.filter(item => (category === null || item.category === category) && (subcategory === null || hasType(item, subcategory)) && [item.key,item.subcategory,item.heading,item.body,item.ctas,item.source_file].some(value => value.toLowerCase().includes(query)));
-    $('result-count').textContent = entries.length === library.length ? entries.length + (entries.length === 1 ? ' entry' : ' entries') : entries.length + ' of ' + library.length + ' entries';
-    show('clear-filters', !!query || category !== null || subcategory !== null);
-    $('entries').replaceChildren();
-    if (!entries.length) { const empty = document.createElement('div'); empty.className = 'empty'; empty.append(text('h2', 'No matching copy'), text('p', 'Try another search or clear your filters.', 'muted'), button('Clear search & filters', clearFilters)); $('entries').append(empty); }
-    const sources = new Map();
-    entries.forEach(item => {
-      if (!sources.has(item.source_file)) sources.set(item.source_file, []);
-      sources.get(item.source_file).push(item);
-    });
-    sources.forEach((items, source) => {
-      const group = document.createElement('section'); group.className = 'source-group card'; group.dataset.source = source;
-      const title = text('h2', source || 'Unspecified source', 'copy');
-      title.id = 'source-' + items[0].id; group.setAttribute('aria-labelledby', title.id);
-      const fields = items.flatMap(item => [['Heading', item.heading], ['Body', item.body], ...item.ctas.split('|').map((value, i) => ['CTA ' + (i + 1), value.trim()])].filter(([label, value]) => value.trim() && (subcategory === null || (subcategory === 'CTA' ? label.startsWith('CTA') : label === subcategory))).map(([label, value]) => ({ item, label, value })));
-      group.append(title);
-      for (const [type, name] of [['Heading', 'Headings'], ['Body', 'Body text'], ['CTA', 'CTAs']]) {
-        if (subcategory !== null && subcategory !== type) continue;
-        const section = document.createElement('section'); section.className = 'copy-section'; section.dataset.type = type;
-        const choices = fields.filter(field => type === 'CTA' ? field.label.startsWith('CTA') : field.label === type);
-        if (!choices.length) continue;
-        const heading = text('h3', name, 'field-label'); heading.id = title.id + '-' + type; section.setAttribute('aria-labelledby', heading.id);
-        section.append(heading);
-        choices.forEach(({ item, label, value }) => {
-          const card = document.createElement('article'); card.className = 'card'; card.dataset.row = item.id;
-          const selected = entry === item && fieldLabel === label;
-           const choice = document.createElement('div'); choice.className = 'choice-row'; choice.dataset.field = label; choice.setAttribute('role', 'button'); choice.setAttribute('tabindex', '0'); choice.setAttribute('aria-pressed', String(selected)); choice.toggleAttribute('selected', selected);
-           const field = document.createElement('div'); field.className = 'field-choice'; field.dataset.selected = String(selected);
-            choice.setAttribute('aria-label', label + ': ' + value);
-           const selectChoice = () => {
-             if (busy || (entry === item && fieldLabel === label)) return;
-             entry = item; fieldLabel = label; copy = value; invalidate();
-             $('entries').querySelectorAll('.choice-row').forEach(row => {
-               const active = row.closest('article').dataset.row === String(entry.id) && row.dataset.field === fieldLabel;
-               row.toggleAttribute('selected', active); row.setAttribute('aria-pressed', String(active)); row.querySelector('.field-choice').dataset.selected = String(active);
-             });
-               $('result').textContent = '';
-             previewCopy();
-           };
-           choice.addEventListener('click', selectChoice);
-           choice.addEventListener('keydown', event => {
-             if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); if (!event.repeat) selectChoice(); }
-           });
-            field.append(text('p', value, 'copy')); choice.append(field); card.append(choice); section.append(card);
-        });
-        group.append(section);
-      }
-      items.filter(item => !fields.some(field => field.item === item)).forEach(item => {
-        const card = document.createElement('article'); card.className = 'card'; card.dataset.row = item.id;
-        card.append(text('p', 'No copy in this entry.', 'muted'));
-        group.append(card);
+    const found = library.filter(matches);
+    $('count').textContent = found.length === library.length ? entries(found.length) : found.length + ' of ' + library.length + ' entries';
+    show('clear', !!query || category !== null || type !== null);
+    updateFilterBadge();
+    const list = $('entries'); list.replaceChildren();
+    if (!found.length) {
+      const empty = el('div', 'empty'); empty.append(el('h2', '', 'No matching copy'), el('p', 'secondary', 'Try another search or clear your filters.'));
+      const clear = el('button', 'btn', 'Clear filters'); clear.addEventListener('click', clearFilters); empty.append(clear);
+      list.append(empty); return;
+    }
+    let lastSource = null;
+    found.slice(0, limit).forEach(entry => {
+      if (entry.source_file !== lastSource) { lastSource = entry.source_file; list.append(el('h2', 'source', entry.source_file ? human(entry.source_file) : 'No source file')); }
+      const card = el('article', 'entry');
+      const meta = el('div', 'entry-meta');
+      meta.append(el('span', 'entry-key', human(entry.key)));
+      const where = [entry.category && human(entry.category), entry.subcategory && human(entry.subcategory)].filter(Boolean).join(' › ');
+      if (where) meta.append(el('span', 'entry-where', where));
+      card.append(meta);
+      const fields = fieldsOf(entry);
+      fields.forEach(([label, value]) => {
+        const wrap = el('div', 'choice-wrap');
+        const button = el('button', 'choice'); button.type = 'button';
+        const selected = !!chosen && chosen.id === entry.id && chosen.label === label && !chosen.multi;
+        button.setAttribute('aria-pressed', String(selected));
+        button.append(el('span', 'choice-label', label), el('span', 'copy', value));
+        button.addEventListener('click', () => choose(button, entry, label, value));
+        const copy = el('button', 'copy-btn'); copy.type = 'button'; copy.title = 'Copy'; copy.setAttribute('aria-label', 'Copy ' + label);
+        copy.innerHTML = ICON_COPY;
+        copy.addEventListener('click', () => void copyText(value, copy, label));
+        wrap.append(button, copy); card.append(wrap);
       });
-      $('entries').append(group);
+
+      // Add "Apply all fields" button when multi-mode is enabled and entry has multiple fields
+      if (multiMode && fields.length > 1) {
+        const button = el('button', 'choice apply-all'); button.type = 'button';
+        const selected = !!chosen && chosen.id === entry.id && chosen.multi;
+        button.setAttribute('aria-pressed', String(selected));
+        button.style.borderStyle = 'dashed';
+        button.append(el('span', 'choice-label', 'All fields'), el('span', 'copy secondary', fields.map(([l]) => l).join(' + ')));
+        button.addEventListener('click', () => chooseMulti(button, entry));
+        card.append(button);
+      }
+
+      list.append(card);
     });
+    if (found.length > limit) {
+      const more = el('button', 'btn', 'Show more (' + (found.length - limit) + ' left)'); more.id = 'more';
+      more.addEventListener('click', () => { limit += PAGE; const top = list.scrollTop; renderEntries(); list.scrollTop = top; });
+      list.append(more);
+    }
   }
-  function clearFilters() { query = ''; $('search').value = ''; filter(null, null); $('entries').scrollTop = 0; $('entries').focus(); }
-  $('clear-filters').addEventListener('click', clearFilters);
+
+  // ---------- Import ----------
   function readFile(file) {
     if (typeof file.text === 'function') return file.text();
-    return new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = () => reject(reader.error || new Error('File read failed.')); reader.onabort = () => reject(new Error('File read cancelled.')); reader.readAsText(file); });
+    return new Promise((resolve, reject) => { const r = new FileReader(); r.onload = () => resolve(r.result); r.onerror = () => reject(r.error || new Error('Could not read the file.')); r.readAsText(file); });
+  }
+  function offer(raw, name) {
+    restoring = false; setError('');
+    let result;
+    try { result = parseCSV(raw); }
+    catch (error) { setError('Could not import ' + name + ': ' + error.message + (library.length ? ' Your current library is unchanged.' : '')); return; }
+    if (!library.length) { install(raw, result, name, true); return; }
+    staged = { raw, result, name };
+    $('confirm-text').textContent = 'Replace your current library (' + entries(library.length) + ') with ' + name + '?';
+    $('confirm-report').replaceChildren(buildReport(result, name));
+    show('confirm', true);
   }
   async function importFile(file) {
-    const version = ++importVersion; restoring = false; lastFile = file; invalidate(); $('error').textContent = ''; $('storage').textContent = 'Reading ' + file.name + '...'; show('retry-file', false);
-    try { const raw = await readFile(file); const parsed = parseCSV(raw); if (version === importVersion) install(raw, parsed, true); }
-    catch (error) { if (version === importVersion) { $('storage').textContent = ''; show('retry-file', true); $('error').textContent = 'Import failed: ' + (error.message || String(error)) + (library.length ? ' Your existing library is unchanged.' : ' Choose a CSV to retry.'); } }
-    finally { if (version === importVersion) mountPicker(); }
+    const version = ++importVersion;
+    try { const raw = await readFile(file); if (version === importVersion) offer(raw, file.name); }
+    catch (error) { if (version === importVersion) setError('Could not read ' + file.name + ': ' + (error.message || error)); }
+    finally { $('file').value = ''; }
   }
-  function mountPicker() {
-    const label = text('label', 'Choose CSV', 'input-label'); label.htmlFor = 'file';
-    const picker = document.createElement('input'); picker.id = 'file'; picker.type = 'file'; picker.accept = '.csv,text/csv';
-    picker.addEventListener('change', () => { const file = picker.files && picker.files[0]; if (file) void importFile(file); });
-    $('picker-host').replaceChildren(label, picker);
-  }
-  $('retry-file').addEventListener('click', () => { if (lastFile) void importFile(lastFile); });
-  $('replace').addEventListener('click', () => { show('import-panel', true); show('browse', false); resetChoice(); });
-  $('cancel-import').addEventListener('click', () => { show('import-panel', false); show('browse', true); $('error').textContent = ''; });
-  $('retry-save').addEventListener('click', save);
-  $('search').addEventListener('input', event => { query = ($('search').value || '').trim().toLowerCase(); resetChoice(); renderEntries(); $('entries').scrollTop = 0; });
-  $('retry-preview').addEventListener('click', previewCopy);
-  $('apply').addEventListener('click', () => { if (!confirmation || busy) return; busy = true; disabled('apply', true); show('retry-preview', false); $('action-status').textContent = 'Applying...'; send({ type: 'apply', token: confirmation.token }); });
-  function handshake() { send({ type: 'ready' }); }
+  $('choose').addEventListener('click', () => $('file').click());
+  $('file').addEventListener('change', () => { const file = $('file').files && $('file').files[0]; if (file) void importFile(file); });
+  $('sample').addEventListener('click', () => offer(SAMPLE_CSV, 'Sample data'));
+  $('confirm-replace').addEventListener('click', () => { if (staged) install(staged.raw, staged.result, staged.name, true); });
+  $('confirm-cancel').addEventListener('click', () => { staged = null; show('confirm', false); });
+  $('open-import').addEventListener('click', () => { show('browse', false); showImportPanel(); show('cancel-import', true); show('report', false); setError(''); resetChoice(); });
+  $('cancel-import').addEventListener('click', () => { staged = null; show('confirm', false); show('import-panel', false); show('browse', true); setError(''); });
+
+  // ---------- Controls ----------
+  $('search').addEventListener('input', () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => { query = $('search').value.trim().toLowerCase(); filtersChanged(); }, 120);
+  });
+  $('category').addEventListener('change', () => { category = $('category').value === '' ? null : $('category').value; filtersChanged(); });
+  $('clear').addEventListener('click', () => { clearFilters(); $('entries').focus(); });
+  $('filters-toggle').addEventListener('click', () => setFilterPanel($('filter-panel').hidden));
+  $('tools').addEventListener('keydown', event => {
+    if (event.key === 'Escape' && !$('filter-panel').hidden) { setFilterPanel(false); $('filters-toggle').focus(); }
+  });
+  $('multi-mode').addEventListener('change', () => {
+    multiMode = $('multi-mode').checked;
+    resetChoice();
+    renderEntries();
+  });
+  $('retry').addEventListener('click', previewCopy);
+  $('apply').addEventListener('click', () => {
+    if (!confirmation || busy) return;
+    busy = true; $('apply').disabled = true; show('retry', false); $('status').textContent = 'Applying…';
+    send({ type: 'apply', token: confirmation.token });
+  });
+
+  // ---------- Bridge to the plugin main thread ----------
+  const handshake = () => send({ type: 'ready' });
   $('reconnect').addEventListener('click', handshake);
   window.addEventListener('message', event => {
     const message = event.data && event.data.pluginMessage; if (!message) return;
-    if (message.type === 'ready') { const changed = !connected; connected = true; $('bridge').textContent = 'Connected to Figma'; show('bridge', false); show('reconnect', false); if (changed) { invalidate(); previewCopy(); } }
-    else if (message.type === 'restore' && restoring && !importVersion) {
-      restoring = false;
-      $('storage').textContent = '';
-      if (message.csv !== null) { try { install(message.csv, parseCSV(message.csv), false); } catch (error) { $('error').textContent = 'Saved library invalid: ' + error.message + '. Import a CSV to replace it.'; } }
-    } else if (message.type === 'saved' && message.request === saveRequest) { $('storage').textContent = ''; show('retry-save', false); }
-    else if (message.type === 'storage-error' && (message.request === undefined || message.request === saveRequest)) { $('storage').textContent = message.message; show('retry-save', !!library.length); }
-    else if (message.type === 'selection') {
-      $('selection').textContent = message.ignored ? message.ignored + ' non-editable layer' + (message.ignored === 1 ? '' : 's') + ' ignored.' : '';
-      const changed = signature !== message.signature || eligibleCount !== message.targets.length;
-      signature = message.signature; eligibleCount = message.targets.length;
+    if (message.type === 'ready') {
+      const changed = !connected; connected = true; show('bridge', false);
       if (changed) { invalidate(); previewCopy(); }
-    } else if (message.type === 'preview' && message.request === request && message.copy === copy && message.signature === signature && eligibleCount > 0 && !busy) {
+    } else if (message.type === 'restore') {
+      if (!restoring) return;
+      restoring = false; $('storage').textContent = '';
+      if (message.csv !== null) {
+        try { install(message.csv, parseCSV(message.csv), null, false); }
+        catch (error) { setError('The saved library could not be read: ' + error.message + ' Import a CSV to replace it.'); showImportPanel(); }
+      } else showImportPanel();
+    } else if (message.type === 'saved') {
+      if (message.request === saveRequest) $('storage').textContent = '';
+    } else if (message.type === 'storage-error') {
+      if (message.request === undefined || message.request === saveRequest) {
+        restoring = false; $('storage').textContent = message.message;
+        if (!library.length) showImportPanel();
+      }
+    } else if (message.type === 'selection') {
+      $('selection').textContent = message.ignored ? plural(message.ignored, 'selected layer') + ' skipped (not editable text).' : '';
+      show('selection', !!message.ignored);
+      const changed = signature !== message.signature || eligible !== message.targets.length;
+      signature = message.signature; eligible = message.targets.length;
+      if (changed) { invalidate(); previewCopy(); }
+    } else if (message.type === 'preview') {
+      // Validate the preview matches current selection
+      const copyMatches = chosen.multi ? !!message.multiMode : message.copy === chosen.value;
+      if (message.request !== request || !chosen || !copyMatches || message.signature !== signature || !eligible || busy) return;
       clearTimeout(previewTimer); previewTimer = null;
-      confirmation = message; disabled('apply', false); show('retry-preview', false); $('action-status').textContent = '';
-      $('apply').textContent = 'Apply to ' + message.targets.length + ' text layer' + (message.targets.length === 1 ? '' : 's');
-    } else if (message.type === 'applied') { busy = false; invalidate(); $('action-status').textContent = ''; show('retry-preview', copy !== null && connected && eligibleCount > 0); $('result').textContent = 'Applied to ' + message.count + ' text layer' + (message.count === 1 ? '' : 's') + '.'; }
-    else if (message.type === 'error' && (message.request === undefined || message.request === request)) { busy = false; invalidate(); $('error').textContent = message.message; $('action-status').textContent = ''; $('result').textContent = ''; show('retry-preview', copy !== null && connected && eligibleCount > 0); }
+      confirmation = message; $('apply').disabled = false; show('retry', false); $('status').textContent = '';
+
+      if (message.multiMode && message.fields) {
+        const fieldCount = message.fields.length;
+        $('apply').textContent = 'Apply ' + plural(fieldCount, 'field') + ' to ' + plural(message.targets.length, 'layer');
+      } else {
+        $('apply').textContent = 'Apply to ' + plural(message.targets.length, 'text layer');
+      }
+    } else if (message.type === 'applied') {
+      busy = false; invalidate(); $('status').textContent = '';
+      show('retry', chosen !== null && connected && eligible > 0);
+      $('result').textContent = 'Applied to ' + plural(message.count, 'text layer') + '.';
+    } else if (message.type === 'error') {
+      if (message.request !== undefined && message.request !== request) return;
+      busy = false; invalidate(); setError(message.message); $('status').textContent = ''; $('result').textContent = '';
+      show('retry', chosen !== null && connected && eligible > 0);
+    }
   });
-  mountPicker(); handshake();
+
+  // ---------- Window resize ----------
+  // The handle sits under the pointer while dragging, so clientX/Y stay stable as the iframe grows.
+  (() => {
+    const grip = $('grip'); let drag = null, frame = 0;
+    const size = event => ({ width: drag.width + event.clientX - drag.x, height: drag.height + event.clientY - drag.y });
+    grip.addEventListener('pointerdown', event => {
+      drag = { x: event.clientX, y: event.clientY, width: window.innerWidth, height: window.innerHeight };
+      grip.setPointerCapture(event.pointerId); grip.classList.add('dragging'); event.preventDefault();
+    });
+    grip.addEventListener('pointermove', event => {
+      if (!drag || frame) return;
+      const next = size(event);
+      frame = requestAnimationFrame(() => { frame = 0; send({ type: 'resize', ...next }); });
+    });
+    const end = event => {
+      if (!drag) return;
+      cancelAnimationFrame(frame); frame = 0;
+      send({ type: 'resize', ...size(event), final: true });
+      drag = null; grip.classList.remove('dragging');
+    };
+    grip.addEventListener('pointerup', end);
+    grip.addEventListener('pointercancel', end);
+  })();
+
+  // Figma's UI iframe can load before the main thread listens, so retry the handshake briefly.
+  handshake();
   let attempts = 0;
-  const retry = setInterval(() => { if (connected) { clearInterval(retry); return; } if (++attempts <= 3) handshake(); else { clearInterval(retry); if (restoring && !importVersion) $('storage').textContent = ''; $('bridge').textContent = 'Figma bridge unavailable. You can still import and browse; applying and saving require a connection.'; show('bridge', true); show('reconnect', true); } }, 1200);
-  let lastHeight = 0;
-  new ResizeObserver(() => { const height = Math.min(720, Math.ceil($('plugin-root').getBoundingClientRect().height)); if (height !== lastHeight) { lastHeight = height; send({ type: 'resize', height }); } }).observe($('plugin-root'));
+  const retry = setInterval(() => {
+    if (connected) { clearInterval(retry); return; }
+    if (++attempts <= 3) { handshake(); return; }
+    clearInterval(retry);
+    restoring = false; $('storage').textContent = '';
+    $('bridge-text').textContent = 'Not connected to Figma. You can still import and browse; applying and saving need a connection.';
+    show('bridge', true); show('reconnect', true);
+    if (!library.length) showImportPanel();
+  }, 1200);
 })();
-</script></body></html>
+</script>
+</body>
+</html>
