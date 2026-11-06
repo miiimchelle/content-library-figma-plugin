@@ -1,0 +1,11 @@
+category,subcategory,key,heading,body,ctas,source_file
+onboarding,welcome,welcome_01,Welcome aboard,"Let's get you set up in just a few quick steps.",Get started|Skip for now,onboarding_flow
+onboarding,success,setup_complete,You're all set,"Your account is ready. Explore at your own pace.",Go to dashboard,onboarding_flow
+auth,sign_in,sign_in_01,Welcome back,"Sign in to pick up where you left off.",Sign in|Forgot password?,auth_screens
+auth,sign_up,sign_up_01,Create your account,"Join in seconds. No credit card required.",Sign up|Continue with Google,auth_screens
+errors,network,error_network,Connection lost,"We couldn't reach the server. Check your connection and try again.",Try again|Contact support,error_states
+errors,not_found,error_404,Page not found,"The page you're looking for doesn't exist or has been moved.",Go home|Search,error_states
+empty_states,no_results,empty_search,No results found,"Try a different search term or clear your filters.",Clear filters,empty_states
+empty_states,no_data,empty_projects,No projects yet,"Create your first project to start collaborating with your team.",Create project|Learn more,empty_states
+confirmation,delete,confirm_delete,Delete this item?,"This action can't be undone. The item will be permanently removed.",Delete|Cancel,confirmation_dialogs
+confirmation,success,saved_changes,Changes saved,"Your updates have been saved successfully.",Done|Undo,confirmation_dialogs
