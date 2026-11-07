@@ -105,3 +105,7 @@ To load the plugin in Figma, go to **Plugins → Development → Import plugin f
 ## Privacy
 
 The plugin makes no network requests (`networkAccess` is set to `none`). The imported CSV is stored locally with Figma's `clientStorage`.
+
+## License
+
+[MIT](LICENSE). See [CHANGELOG.md](CHANGELOG.md) for release notes.

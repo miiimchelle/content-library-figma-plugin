@@ -2,6 +2,7 @@
   "name": "content-library-plugin",
   "version": "1.0.0",
   "private": true,
+  "license": "MIT",
   "description": "Figma plugin: import, search and apply a CSV content library to selected text layers.",
   "scripts": {
     "build": "tsc && node build.mjs",
