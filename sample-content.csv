@@ -1,4 +1,4 @@
-category,subcategory,key,heading,body,ctas,source_file
+category,subcategory,key,title,description,ctas,source_file
 onboarding,welcome,welcome_01,Welcome aboard,"Let's get you set up in just a few quick steps.",Get started|Skip for now,onboarding_flow
 onboarding,success,setup_complete,You're all set,"Your account is ready. Explore at your own pace.",Go to dashboard,onboarding_flow
 auth,sign_in,sign_in_01,Welcome back,"Sign in to pick up where you left off.",Sign in|Forgot password?,auth_screens

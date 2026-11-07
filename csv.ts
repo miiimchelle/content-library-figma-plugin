@@ -1,16 +1,15 @@
 // Pure CSV parsing for the content library. No DOM or Figma APIs, so it can be tested
 // under Node and inlined into ui.html by build.mjs.
 
+// One column of copy for an entry. `type` is the normalized column name (heading, label, error_message…).
+interface EntryField { type: string; values: string[] }
 interface LibraryEntry {
   id: number;
   category: string;
   subcategory: string;
   key: string;
-  heading: string;
-  body: string;
-  ctas: string;
-  ctaList: string[];
   source_file: string;
+  fields: EntryField[];
 }
 interface SkippedRow { row: number; reason: string }
 interface ParseResult {
@@ -18,11 +17,16 @@ interface ParseResult {
   skipped: SkippedRow[];
   warnings: string[];
   ignoredColumns: string[];
+  contentTypes: string[];
   delimiter: string;
 }
 
-const KNOWN_COLUMNS = ['category', 'subcategory', 'key', 'heading', 'body', 'ctas', 'source_file'];
-const COPY_COLUMNS = ['heading', 'body', 'ctas'];
+// Columns that describe an entry. Every other column is a content type, so the library adapts to the CSV.
+const RESERVED_COLUMNS = ['key', 'category', 'subcategory', 'source_file'];
+// The one column whose cells hold several values, separated by "|".
+const MULTI_VALUE_COLUMN = 'ctas';
+// Columns starting with one of these are notes for humans and are never imported.
+const IGNORED_PREFIXES = ['_', '#'];
 const ALIASES: { [name: string]: string } = { cta: 'ctas', source: 'source_file' };
 const DELIMITERS = [',', ';', '\t'];
 
@@ -84,22 +88,25 @@ function parseCSV(raw: string): ParseResult {
   const warnings: string[] = [];
   const ignoredColumns: string[] = [];
   const index: { [name: string]: number } = {};
+  const contentColumns: string[] = [];
   const duplicated: string[] = [];
   header.forEach((value, i) => {
     const name = normalizeHeader(value);
     if (!name) return;
-    if (KNOWN_COLUMNS.indexOf(name) === -1) { ignoredColumns.push(value.trim()); return; }
+    if (IGNORED_PREFIXES.some(prefix => value.trim().charAt(0) === prefix)) { ignoredColumns.push(value.trim()); return; }
     if (name in index) { if (duplicated.indexOf(name) === -1) duplicated.push(name); return; }
     index[name] = i;
+    if (RESERVED_COLUMNS.indexOf(name) === -1) contentColumns.push(name);
   });
   if (!('key' in index)) throw new Error('Missing a "key" column. Found: ' + (header.map(h => h.trim()).filter(Boolean).join(', ') || 'no headers') + '.');
-  if (!COPY_COLUMNS.some(name => name in index)) throw new Error('Missing copy columns. Add at least one of: heading, body, ctas.');
+  if (!contentColumns.length) throw new Error('No content columns. Add at least one column besides key, category, subcategory and source_file (for example heading or body).');
   if (duplicated.length) warnings.push('Duplicate columns ignored (first one used): ' + duplicated.join(', ') + '.');
 
   const cell = (cells: string[], name: string) => (name in index && cells[index[name]] !== undefined ? cells[index[name]].trim() : '');
   const entries: LibraryEntry[] = [];
   const skipped: SkippedRow[] = [];
   const seen: { [key: string]: boolean } = {};
+  const typesWithCopy: { [type: string]: boolean } = {};
   const duplicateKeys: string[] = [];
   rows.forEach((cells, i) => {
     const row = i + 2;
@@ -110,19 +117,22 @@ function parseCSV(raw: string): ParseResult {
     }
     const key = cell(cells, 'key');
     if (!key) { skipped.push({ row, reason: 'missing key' }); return; }
-    const ctas = cell(cells, 'ctas');
+    const fields: EntryField[] = [];
+    contentColumns.forEach(type => {
+      const raw = cell(cells, type);
+      const values = type === MULTI_VALUE_COLUMN ? raw.split('|').map(value => value.trim()).filter(Boolean) : (raw ? [raw] : []);
+      if (values.length) fields.push({ type, values });
+    });
+    if (!fields.length) { skipped.push({ row, reason: 'has no copy in any content column' }); return; }
+    fields.forEach(field => { typesWithCopy[field.type] = true; });
     const entry: LibraryEntry = {
       id: entries.length,
       category: cell(cells, 'category'),
       subcategory: cell(cells, 'subcategory'),
       key,
-      heading: cell(cells, 'heading'),
-      body: cell(cells, 'body'),
-      ctas,
-      ctaList: ctas.split('|').map(value => value.trim()).filter(Boolean),
-      source_file: cell(cells, 'source_file')
+      source_file: cell(cells, 'source_file'),
+      fields
     };
-    if (!entry.heading && !entry.body && !entry.ctaList.length) { skipped.push({ row, reason: 'no heading, body or CTA' }); return; }
     if (seen[key] && duplicateKeys.indexOf(key) === -1) duplicateKeys.push(key);
     seen[key] = true;
     entries.push(entry);
@@ -133,7 +143,9 @@ function parseCSV(raw: string): ParseResult {
   if (!entries.length) {
     throw new Error('No usable rows found.' + (skipped.length ? ' Row ' + skipped[0].row + ' ' + skipped[0].reason + '.' : ''));
   }
-  return { entries, skipped, warnings, ignoredColumns, delimiter };
+  // Only types that have copy somewhere, in the order the columns appear in the file.
+  const contentTypes = contentColumns.filter(type => typesWithCopy[type]);
+  return { entries, skipped, warnings, ignoredColumns, contentTypes, delimiter };
 }
 
 // Node (tests) and the build step's wrapper provide `exports`; the Figma main thread does not.

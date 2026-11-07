@@ -12,13 +12,13 @@ Search your team's copy from a CSV and apply it to text layers in one click.
 
 ## Description
 
-Stop copy-pasting from spreadsheets. Content library turns a CSV of your team's copy into a searchable library inside Figma. Find the right heading, body text or button label, and apply it to the text layers you have selected.
+Stop copy-pasting from spreadsheets. Content library turns a CSV of your team's copy into a searchable library inside Figma. Find the right heading, label, error message or button text, and apply it to the text layers you have selected.
 
 **What you can do**
 
 - Import a CSV and browse it as cards, grouped by source file.
-- Search across copy, keys, categories and sources, or narrow the list by category and content type (Heading, Body, CTA).
-- Click any heading, body or CTA to apply it to every selected text layer, after a preview that tells you how many layers will change.
+- Search across copy, keys, categories and sources, or narrow the list by category and content type. The content types come from your CSV, so whatever columns your team uses (headings, body text, labels, tooltips, error messages…) become filters automatically.
+- Click any piece of copy to apply it to every selected text layer, after a preview that tells you how many layers will change.
 - Copy any piece of text to the clipboard without applying it.
 - Keep your library between sessions. It is saved on your device, so you only import once.
 
@@ -42,7 +42,7 @@ The plugin makes no network requests and has no account or sign-in. Your CSV is 
 
 **Your CSV**
 
-You need a `key` column and at least one of `heading`, `body` or `ctas`. Add `category`, `subcategory` and `source_file` to organise the list. Several CTAs in one cell are separated with `|`. Column order and capitalisation don't matter, extra columns are ignored, and comma, semicolon and tab files all work, so exports from Excel and Google Sheets are fine. Rows with a problem are skipped and listed after import, and the rest still load.
+You only need a `key` column. Every other column becomes a type of copy named after its header, so a `label`, `tooltip` or `error_message` column works just like `heading` and `body`. Add `category`, `subcategory` and `source_file` to organise the list. Several CTAs in one cell are separated with `|` in a column called `ctas`. Start a column name with `_` or `#` to keep it out of the plugin, for example `_notes`. Column order and capitalisation don't matter, and comma, semicolon and tab files all work, so exports from Excel and Google Sheets are fine. Rows with a problem are skipped and listed after import, and the rest still load.
 
 **Good to know**
 

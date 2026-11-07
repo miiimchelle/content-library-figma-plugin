@@ -88,8 +88,8 @@ select.field { padding-right: 4px; }
 #browse { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 #tools { padding: 8px 12px; border-bottom: 1px solid var(--border); flex: none; }
 #tools > * + * { margin-top: 8px; }
-.segmented { display: flex; border: 1px solid var(--border); border-radius: 6px; padding: 2px; gap: 2px; }
-.segmented button { flex: 1; height: 22px; border: 0; border-radius: 4px; background: transparent; cursor: pointer; color: var(--text-secondary); }
+.segmented { display: flex; flex-wrap: wrap; border: 1px solid var(--border); border-radius: 6px; padding: 2px; gap: 2px; }
+.segmented button { flex: 1 1 auto; padding: 0 8px; height: 22px; border: 0; border-radius: 4px; background: transparent; cursor: pointer; color: var(--text-secondary); }
 .segmented button:hover { background: var(--bg-hover); }
 .segmented button[aria-pressed=true] { background: var(--bg-selected); color: var(--text-brand); font-weight: 500; }
 #count-row { justify-content: space-between; min-height: 24px; }
@@ -189,15 +189,15 @@ select.field { padding-right: 4px; }
     </div>
     <details id="format">
       <summary>CSV format</summary>
-      <p class="secondary" style="margin-top:8px">Needs a <b>key</b> column and at least one of heading, body or ctas. Column order and case don't matter, and extra columns are ignored. Commas, semicolons and tabs are all fine.</p>
+      <p class="secondary" style="margin-top:8px">Needs a <b>key</b> column. Every other column becomes a type of copy you can filter by, named after its header (heading, body, label, tooltip…). Column order and case don't matter. Commas, semicolons and tabs are all fine.</p>
       <table>
         <tr><td>key</td><td>Unique ID for the entry (required)</td></tr>
-        <tr><td>heading</td><td>Heading copy</td></tr>
-        <tr><td>body</td><td>Body copy</td></tr>
-        <tr><td>ctas</td><td>One or more CTAs separated by |</td></tr>
         <tr><td>category</td><td>Used for the category filter</td></tr>
         <tr><td>subcategory</td><td>Shown on the card, searchable</td></tr>
         <tr><td>source_file</td><td>Groups entries in the list</td></tr>
+        <tr><td>any other</td><td>A type of copy, e.g. heading, body, label, tooltip</td></tr>
+        <tr><td>ctas</td><td>Special: several CTAs in one cell, separated by |</td></tr>
+        <tr><td>_notes</td><td>Columns starting with _ or # are not imported</td></tr>
       </table>
     </details>
   </section>
@@ -213,7 +213,7 @@ select.field { padding-right: 4px; }
           <label class="label" for="category">Category</label>
           <select id="category" class="field"></select>
         </div>
-        <div>
+        <div id="type-group">
           <span class="label" id="type-label">Content type</span>
           <div id="types" class="segmented" role="group" aria-labelledby="type-label"></div>
         </div>
@@ -248,10 +248,11 @@ select.field { padding-right: 4px; }
 (() => {
   const { parseCSV } = csvModule;
   const $ = id => document.getElementById(id);
-  const TYPES = [[null, 'All'], ['Heading', 'Heading'], ['Body', 'Body'], ['CTA', 'CTA']];
   const PAGE = 100;
   const plural = (n, word, many) => n + ' ' + (n === 1 ? word : many || word + 's');
   const entries = n => plural(n, 'entry', 'entries');
+  // Content types come from the CSV's columns. "ctas" reads better as "CTA".
+  const typeLabel = value => value === 'ctas' ? 'CTA' : human(value);
   const human = value => value.replace(/[_-]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
   const ICON_COPY = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"><rect x="5.5" y="5.5" width="8" height="8" rx="1.5"/><path d="M10.5 3.5v-1a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h1"/></svg>';
   const ICON_CHECK = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8.5l3 3 6-7"/></svg>';
@@ -264,7 +265,7 @@ select.field { padding-right: 4px; }
     return node;
   };
 
-  let library = [], csv = '', category = null, type = null, query = '', limit = PAGE;
+  let library = [], contentTypes = [], csv = '', category = null, type = null, query = '', limit = PAGE;
   let chosen = null;                 // { id, label, value } or { id, entry, multi: true }
   let staged = null;                 // parsed file waiting for "Replace library" confirmation
   let confirmation = null, request = 0, connected = false, restoring = true, importVersion = 0;
@@ -355,13 +356,8 @@ select.field { padding-right: 4px; }
 
     // Multi-field mode: send all fields from the entry
     if (chosen.multi) {
-      const entry = chosen.entry;
-      const fields = [];
-      if (entry.heading) fields.push({ field: 'Heading', value: entry.heading });
-      if (entry.body) fields.push({ field: 'Body', value: entry.body });
-      entry.ctaList.forEach((cta, i) => fields.push({ field: entry.ctaList.length > 1 ? 'CTA ' + (i + 1) : 'CTA', value: cta }));
-
-      send({ type: 'preview', copy: fields[0]?.value || '', multiMode: true, fields, request });
+      const fields = allFields(chosen.entry).map(([field, value]) => ({ field, value }));
+      send({ type: 'preview', copy: fields[0] ? fields[0].value : '', multiMode: true, fields, request });
     } else {
       // Single-field mode: send one value
       send({ type: 'preview', copy: chosen.value, multiMode: false, request });
@@ -377,7 +373,7 @@ select.field { padding-right: 4px; }
     send({ type: 'save', csv, request: saveRequest });
   }
   function install(raw, result, name, persist) {
-    csv = raw; library = result.entries; staged = null;
+    csv = raw; library = result.entries; contentTypes = result.contentTypes; staged = null;
     category = null; type = null; query = ''; limit = PAGE; $('search').value = '';
     const categories = [...new Set(library.map(e => e.category))].sort();
     $('category').replaceChildren(new Option('All categories', ''), ...categories.map(c => new Option(c ? human(c) : '(no category)', c)));
@@ -390,21 +386,25 @@ select.field { padding-right: 4px; }
     if (name) showReport(result, name); else show('report', false);
     if (persist) save();
   }
-  function hasType(entry, t) { return t === 'Heading' ? !!entry.heading : t === 'Body' ? !!entry.body : entry.ctaList.length > 0; }
+  function hasType(entry, t) { return entry.fields.some(f => f.type === t); }
+  // Every [label, value, type] row of an entry, in column order. Several CTAs become "CTA 1", "CTA 2"…
+  function allFields(entry) {
+    return entry.fields.flatMap(f => f.values.map((value, i) => [f.values.length > 1 ? typeLabel(f.type) + ' ' + (i + 1) : typeLabel(f.type), value, f.type]));
+  }
   function matches(entry) {
     if (category !== null && entry.category !== category) return false;
     if (type !== null && !hasType(entry, type)) return false;
-    return !query || [entry.key, entry.category, entry.subcategory, entry.heading, entry.body, entry.ctas, entry.source_file, human(entry.key), human(entry.source_file)].some(v => v.toLowerCase().includes(query));
+    if (!query) return true;
+    const haystack = [entry.key, entry.category, entry.subcategory, entry.source_file, human(entry.key), human(entry.source_file), ...entry.fields.flatMap(f => f.values)];
+    return haystack.some(v => v.toLowerCase().includes(query));
   }
   function fieldsOf(entry) {
-    const all = [];
-    if (entry.heading) all.push(['Heading', entry.heading]);
-    if (entry.body) all.push(['Body', entry.body]);
-    entry.ctaList.forEach((cta, i) => all.push([entry.ctaList.length > 1 ? 'CTA ' + (i + 1) : 'CTA', cta]));
-    return all.filter(([label]) => type === null || label.startsWith(type));
+    return allFields(entry).filter(row => type === null || row[2] === type);
   }
   function renderTypes() {
-    $('types').replaceChildren(...TYPES.map(([value, label]) => {
+    // A filter with one choice is pointless, so only show it when the CSV has several content types.
+    show('type-group', contentTypes.length > 1);
+    $('types').replaceChildren(...[[null, 'All'], ...contentTypes.map(t => [t, typeLabel(t)])].map(([value, label]) => {
       const b = el('button', '', label); b.type = 'button';
       b.setAttribute('aria-pressed', String(value === type));
       b.addEventListener('click', () => { type = value; filtersChanged(); renderTypes(); });
@@ -463,13 +463,15 @@ select.field { padding-right: 4px; }
         wrap.append(button, copy); card.append(wrap);
       });
 
-      // Add "Apply all fields" button when multi-mode is enabled and entry has multiple fields
-      if (multiMode && fields.length > 1) {
+      // Add "Apply all fields" button when multi-mode is enabled and entry has multiple fields.
+      // It always covers every field of the entry, even while a content type filter is active.
+      const every = allFields(entry);
+      if (multiMode && every.length > 1) {
         const button = el('button', 'choice apply-all'); button.type = 'button';
         const selected = !!chosen && chosen.id === entry.id && chosen.multi;
         button.setAttribute('aria-pressed', String(selected));
         button.style.borderStyle = 'dashed';
-        button.append(el('span', 'choice-label', 'All fields'), el('span', 'copy secondary', fields.map(([l]) => l).join(' + ')));
+        button.append(el('span', 'choice-label', 'All fields'), el('span', 'copy secondary', every.map(([l]) => l).join(' + ')));
         button.addEventListener('click', () => chooseMulti(button, entry));
         card.append(button);
       }
@@ -566,7 +568,7 @@ select.field { padding-right: 4px; }
       if (changed) { invalidate(); previewCopy(); }
     } else if (message.type === 'preview') {
       // Validate the preview matches current selection
-      const copyMatches = chosen.multi ? !!message.multiMode : message.copy === chosen.value;
+      const copyMatches = !!chosen && (chosen.multi ? !!message.multiMode : message.copy === chosen.value);
       if (message.request !== request || !chosen || !copyMatches || message.signature !== signature || !eligible || busy) return;
       clearTimeout(previewTimer); previewTimer = null;
       confirmation = message; $('apply').disabled = false; show('retry', false); $('status').textContent = '';
